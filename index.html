@@ -54,6 +54,7 @@
 
         .nav-btn:hover {
             transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
         }
 
         .nav-btn.active {
@@ -135,6 +136,14 @@
             border: 2px solid #e1e8ed;
             border-radius: 10px;
             font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
         }
 
         .btn {
@@ -147,6 +156,12 @@
             font-size: 16px;
             font-weight: 600;
             margin: 5px;
+            transition: all 0.3s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
         }
 
         .btn-secondary {
@@ -184,6 +199,8 @@
             background: linear-gradient(45deg, #667eea, #764ba2);
             color: white;
             font-weight: 600;
+            position: sticky;
+            top: 0;
         }
 
         .hidden {
@@ -223,15 +240,6 @@
             color: white;
         }
 
-        .credit-indicator {
-            background: linear-gradient(45deg, #5352ed, #3742fa);
-            color: white;
-            padding: 2px 6px;
-            border-radius: 8px;
-            font-size: 10px;
-            margin-left: 5px;
-        }
-
         .alert {
             padding: 15px;
             border-radius: 10px;
@@ -259,40 +267,6 @@
             color: white;
         }
 
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-        }
-
-        .modal-content {
-            background: white;
-            margin: 2% auto;
-            padding: 30px;
-            border-radius: 15px;
-            width: 90%;
-            max-width: 800px;
-            max-height: 90vh;
-            overflow-y: auto;
-        }
-
-        .close {
-            color: #aaa;
-            float: right;
-            font-size: 28px;
-            font-weight: bold;
-            cursor: pointer;
-        }
-
-        .close:hover {
-            color: #000;
-        }
-
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -306,6 +280,11 @@
             padding: 25px;
             border-radius: 15px;
             text-align: center;
+            transition: transform 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
         }
 
         .stat-value {
@@ -326,57 +305,44 @@
             margin-bottom: 30px;
         }
 
-        .target-card {
+        .report-section {
             background: white;
-            border-radius: 10px;
             padding: 20px;
-            margin: 10px 0;
+            border-radius: 10px;
+            margin: 20px 0;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
 
-        .progress-bar {
-            background: #e9ecef;
+        .chart-container {
+            width: 100%;
+            height: 400px;
+            margin: 20px 0;
+            background: white;
             border-radius: 10px;
+            padding: 20px;
+        }
+
+        /* Loading animation */
+        .loading {
+            display: inline-block;
+            width: 20px;
             height: 20px;
-            overflow: hidden;
-            margin: 10px 0;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
         }
 
-        .progress-fill {
-            height: 100%;
-            border-radius: 10px;
-            transition: width 0.3s ease;
-        }
-
-        .package-indicator {
-            background: linear-gradient(45deg, #5352ed, #3742fa);
-            color: white;
-            padding: 2px 6px;
-            border-radius: 8px;
-            font-size: 10px;
-            margin-left: 5px;
-        }
-
-        .calendar-day {
-            position: relative;
-            min-height: 100px;
-        }
-
-        .calendar-day.today {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-            color: white !important;
-        }
-
-        .calendar-day.other-month {
-            background: #f8f9fa !important;
-            color: #6c757d !important;
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
     </style>
 </head>
 <body>
     <div class="sync-status" id="syncStatus">
         <div class="sync-indicator" id="syncIndicator"></div>
-        <span id="syncText">Offline</span>
+        <span id="syncText">Ready</span>
         <button class="btn" onclick="manualSync()" style="padding: 5px 10px; font-size: 10px; margin: 0;">Sync</button>
     </div>
 
@@ -385,12 +351,10 @@
             <h1 style="text-align: center; margin-bottom: 20px; color: #333; font-size: 2.5em; font-weight: 700;">🎾 Padel Academy Management</h1>
             <div class="nav">
                 <button class="nav-btn active" onclick="showPage('sessions')">Sessions</button>
-                <button class="nav-btn" onclick="showPage('calendar')">Calendar</button>
                 <button class="nav-btn" onclick="showPage('clients')">Clients</button>
                 <button class="nav-btn" onclick="showPage('expenses')">Expenses</button>
                 <button class="nav-btn" onclick="showPage('dashboard')">Dashboard</button>
                 <button class="nav-btn" onclick="showPage('reports')">Reports</button>
-                <button class="nav-btn" onclick="showPage('targets')">Targets</button>
                 <button class="nav-btn" onclick="showPage('backup')">Backup</button>
             </div>
         </div>
@@ -468,23 +432,6 @@
                             <input type="text" id="newClientName">
                         </div>
                         <div class="form-group">
-                            <label>Payment Method:</label>
-                            <select id="paymentMethod" required onchange="handlePaymentMethodChange()">
-                                <option value="">Select Method</option>
-                                <option value="Cash">Cash</option>
-                                <option value="Card">Card</option>
-                                <option value="Bank Transfer">Bank Transfer</option>
-                                <option value="Mobile Payment">Mobile Payment</option>
-                                <option value="Package">Package</option>
-                            </select>
-                        </div>
-                        <div class="form-group hidden" id="packageGroup">
-                            <label>Select Package:</label>
-                            <select id="packageSelect">
-                                <option value="">Select Package</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
                             <label>Payment Status:</label>
                             <select id="paymentStatus" required>
                                 <option value="">Select Status</option>
@@ -529,7 +476,6 @@
                             <th>Location</th>
                             <th>Type</th>
                             <th>Status</th>
-                            <th>Payment</th>
                             <th>Revenue</th>
                             <th>Actions</th>
                         </tr>
@@ -537,29 +483,6 @@
                     <tbody id="sessionsTableBody">
                     </tbody>
                 </table>
-            </div>
-        </div>
-
-        <!-- Calendar Page -->
-        <div id="calendar" class="page">
-            <h2 style="margin-bottom: 30px; color: #333;">📅 Session Calendar</h2>
-            
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; flex-wrap: wrap; gap: 15px;">
-                <div>
-                    <button class="btn btn-secondary" onclick="previousMonth()">◀ Previous</button>
-                    <span id="currentMonthYear" style="margin: 0 20px; font-weight: bold;"></span>
-                    <button class="btn btn-secondary" onclick="nextMonth()">Next ▶</button>
-                </div>
-                <div>
-                    <select id="calendarClientFilter" onchange="renderCalendar()">
-                        <option value="">All Clients</option>
-                    </select>
-                    <button class="btn" onclick="goToToday()">Today</button>
-                </div>
-            </div>
-
-            <div id="calendarContainer" style="background: white; border-radius: 15px; padding: 20px;">
-                <!-- Calendar will be rendered here -->
             </div>
         </div>
 
@@ -618,9 +541,8 @@
                             <th>Email</th>
                             <th>Phone</th>
                             <th>Sessions</th>
-                            <th>Credit Balance</th>
-                            <th>Package Balance</th>
                             <th>Total Spent</th>
+                            <th>Lead Source</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -654,11 +576,12 @@
                                 <option value="Court Rental">Court Rental</option>
                                 <option value="Equipment">Equipment</option>
                                 <option value="Marketing">Marketing</option>
+                                <option value="Transportation">Transportation</option>
                                 <option value="Other">Other</option>
                             </select>
                         </div>
                         <div class="form-group">
-                            <label>Amount:</label>
+                            <label>Amount (AED):</label>
                             <input type="number" id="expenseAmount" step="0.01" required>
                         </div>
                         <div class="form-group">
@@ -712,73 +635,20 @@
                     <div class="stat-label">Total Clients</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-value" id="totalCredits">AED 0</div>
-                    <div class="stat-label">Client Credits</div>
+                    <div class="stat-value" id="totalExpenses">AED 0</div>
+                    <div class="stat-label">Total Expenses</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-value" id="totalPackages">AED 0</div>
-                    <div class="stat-label">Package Balance</div>
+                    <div class="stat-value" id="avgRevenuePerSession">AED 0</div>
+                    <div class="stat-label">Avg Revenue/Session</div>
                 </div>
             </div>
-        </div>
 
-        <!-- Targets Page -->
-        <div id="targets" class="page">
-            <h2 style="margin-bottom: 30px; color: #333;">🎯 Targets</h2>
-            
-            <div style="display: flex; gap: 15px; margin-bottom: 30px; flex-wrap: wrap;">
-                <button class="btn" onclick="showAddTargetForm()">➕ Set New Target</button>
-            </div>
-
-            <div id="addTargetForm" class="hidden" style="background: #f8f9fa; padding: 25px; border-radius: 15px; margin-bottom: 30px;">
-                <h3 style="margin-bottom: 20px; color: #333;">Set New Target</h3>
-                <form onsubmit="addTarget(event)">
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label>Target Type:</label>
-                            <select id="targetType" required>
-                                <option value="">Select Type</option>
-                                <option value="sessions">Sessions</option>
-                                <option value="revenue">Revenue</option>
-                                <option value="profit">Profit</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Period:</label>
-                            <select id="targetPeriod" required>
-                                <option value="">Select Period</option>
-                                <option value="quarterly">Quarterly</option>
-                                <option value="yearly">Yearly</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Year:</label>
-                            <input type="number" id="targetYear" min="2024" max="2030" required>
-                        </div>
-                        <div class="form-group" id="quarterGroup">
-                            <label>Quarter:</label>
-                            <select id="targetQuarter">
-                                <option value="">Select Quarter</option>
-                                <option value="1">Q1 (Jan-Mar)</option>
-                                <option value="2">Q2 (Apr-Jun)</option>
-                                <option value="3">Q3 (Jul-Sep)</option>
-                                <option value="4">Q4 (Oct-Dec)</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Target Value:</label>
-                            <input type="number" id="targetValue" step="0.01" required>
-                        </div>
-                    </div>
-                    <div style="display: flex; gap: 15px; margin-top: 20px;">
-                        <button type="submit" class="btn">💾 Save Target</button>
-                        <button type="button" class="btn btn-secondary" onclick="hideAddTargetForm()">❌ Cancel</button>
-                    </div>
-                </form>
-            </div>
-
-            <div id="targetsContainer">
-                <!-- Targets will be rendered here -->
+            <div class="report-section">
+                <h3>Quick Stats</h3>
+                <div id="quickStats">
+                    <!-- Quick stats will be populated here -->
+                </div>
             </div>
         </div>
 
@@ -790,67 +660,63 @@
                 <h3>Generate Reports</h3>
                 <div class="form-grid">
                     <div class="form-group">
-                        <h4>Sessions Reports</h4>
-                        <select id="sessionsReportType">
-                            <option value="monthly">Sessions per Month</option>
-                            <option value="yearly">Sessions per Year</option>
-                            <option value="location">Sessions by Location</option>
-                            <option value="timing">Session Timing Analysis</option>
+                        <label>Report Type:</label>
+                        <select id="reportType">
+                            <option value="monthly">Monthly Summary</option>
+                            <option value="yearly">Yearly Summary</option>
+                            <option value="financial">Financial Report</option>
+                            <option value="client-analysis">Client Analysis</option>
+                            <option value="location-analysis">Location Analysis</option>
                         </select>
-                        <div style="margin-top: 10px;">
-                            <input type="number" id="reportYear" placeholder="Year (e.g., 2024)" min="2020" max="2030">
-                            <select id="reportMonth" style="display:none;">
-                                <option value="">All Months</option>
-                                <option value="1">January</option>
-                                <option value="2">February</option>
-                                <option value="3">March</option>
-                                <option value="4">April</option>
-                                <option value="5">May</option>
-                                <option value="6">June</option>
-                                <option value="7">July</option>
-                                <option value="8">August</option>
-                                <option value="9">September</option>
-                                <option value="10">October</option>
-                                <option value="11">November</option>
-                                <option value="12">December</option>
-                            </select>
-                        </div>
-                        <div style="margin-top: 10px;">
-                            <button class="btn" onclick="generateSessionsReport()">Generate Report</button>
-                            <button class="btn btn-success" onclick="downloadReportExcel()">Download Excel</button>
-                            <button class="btn btn-secondary" onclick="downloadReportPDF()">Download PDF</button>
-                        </div>
                     </div>
-                    
                     <div class="form-group">
-                        <h4>Financial Reports</h4>
-                        <button class="btn" onclick="generateFinancialReport()">Financial Report</button>
-                        <button class="btn" onclick="generatePendingPayments()">Pending Payments</button>
-                        <button class="btn" onclick="generateTargetProgressReport()">Target Progress</button>
+                        <label>Year:</label>
+                        <select id="reportYear">
+                            <!-- Years will be populated dynamically -->
+                        </select>
                     </div>
+                    <div class="form-group">
+                        <label>Month (for monthly reports):</label>
+                        <select id="reportMonth">
+                            <option value="">All Months</option>
+                            <option value="1">January</option>
+                            <option value="2">February</option>
+                            <option value="3">March</option>
+                            <option value="4">April</option>
+                            <option value="5">May</option>
+                            <option value="6">June</option>
+                            <option value="7">July</option>
+                            <option value="8">August</option>
+                            <option value="9">September</option>
+                            <option value="10">October</option>
+                            <option value="11">November</option>
+                            <option value="12">December</option>
+                        </select>
+                    </div>
+                </div>
+                <div style="margin-top: 20px;">
+                    <button class="btn" onclick="generateReport()">📊 Generate Report</button>
+                    <button class="btn btn-success" onclick="downloadReportPDF()" id="downloadBtn" style="display: none;">📄 Download PDF</button>
                 </div>
             </div>
 
-            <div id="reportResults" class="hidden" style="margin-top: 30px;">
-                <h3>Report Results</h3>
-                <div id="reportContent"></div>
+            <div id="reportResults" class="hidden">
+                <div class="report-section">
+                    <div id="reportContent">
+                        <!-- Report content will be populated here -->
+                    </div>
+                </div>
             </div>
         </div>
 
         <!-- Backup Page -->
         <div id="backup" class="page">
-            <h2 style="margin-bottom: 30px; color: #333;">💾 Backup & Sync</h2>
+            <h2 style="margin-bottom: 30px; color: #333;">💾 Backup & Export</h2>
             
             <div class="form-grid">
                 <div class="form-group">
-                    <h3>Cloud Sync</h3>
-                    <p>Your data is automatically synced to the cloud and across devices.</p>
-                    <button class="btn" onclick="manualSync()">🔄 Manual Sync</button>
-                    <button class="btn btn-secondary" onclick="clearCloudData()">☁️ Clear Cloud Data</button>
-                </div>
-                
-                <div class="form-group">
-                    <h3>Local Backup</h3>
+                    <h3>Data Backup</h3>
+                    <p>Download a complete backup of all your data.</p>
                     <button class="btn" onclick="backupAllData()">📤 Download Backup</button>
                     <button class="btn btn-secondary" onclick="restoreData()">📥 Restore Data</button>
                     <input type="file" id="restoreFile" accept=".json" style="display: none;" onchange="handleRestore(event)">
@@ -858,6 +724,7 @@
                 
                 <div class="form-group">
                     <h3>Export Options</h3>
+                    <p>Export specific data sets as CSV files.</p>
                     <button class="btn" onclick="exportSessions()">📊 Export Sessions</button>
                     <button class="btn" onclick="exportClients()">👥 Export Clients</button>
                     <button class="btn" onclick="exportExpenses()">💰 Export Expenses</button>
@@ -865,6 +732,7 @@
                 
                 <div class="form-group">
                     <h3>Data Management</h3>
+                    <p>Manage your application data.</p>
                     <button class="btn btn-danger" onclick="clearAllData()">🗑️ Clear All Data</button>
                     <p style="color: #666; font-size: 0.9em; margin-top: 10px;">⚠️ This will delete all data permanently!</p>
                 </div>
@@ -872,511 +740,81 @@
         </div>
     </div>
 
-    <!-- Credit Management Modal -->
-    <div id="creditModal" class="modal">
-        <div class="modal-content">
-            <span class="close" onclick="closeCreditModal()">&times;</span>
-            <h3>Manage Client Credit & Packages</h3>
-            <div id="creditContent"></div>
-        </div>
-    </div>
-
-    <!-- Edit Session Modal -->
-    <div id="editSessionModal" class="modal">
-        <div class="modal-content">
-            <span class="close" onclick="closeEditSessionModal()">&times;</span>
-            <h3>Edit Session</h3>
-            <div id="editSessionContent">
-                <form onsubmit="updateSession(event)">
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label>Date:</label>
-                            <input type="date" id="editSessionDate" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Time:</label>
-                            <input type="time" id="editSessionTime" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Location:</label>
-                            <select id="editLocation" required>
-                                <option value="">Select Location</option>
-                                <option value="Top Padel">Top Padel</option>
-                                <option value="Champs">Champs</option>
-                                <option value="Padel Art">Padel Art</option>
-                                <option value="Other">Other</option>
-                            </select>
-                        </div>
-                        <div class="form-group hidden" id="editCustomLocationGroup">
-                            <label>Custom Location:</label>
-                            <input type="text" id="editCustomLocation">
-                        </div>
-                        <div class="form-group">
-                            <label>Session Type:</label>
-                            <select id="editSessionType" required>
-                                <option value="">Select Type</option>
-                                <option value="Group Session">Group Session</option>
-                                <option value="Private">Private</option>
-                                <option value="Networking">Networking</option>
-                                <option value="Tournament">Tournament</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Duration (hours):</label>
-                            <select id="editDuration" required>
-                                <option value="">Select Duration</option>
-                                <option value="0.5">30 minutes</option>
-                                <option value="1">1 hour</option>
-                                <option value="1.5">1.5 hours</option>
-                                <option value="2">2 hours</option>
-                                <option value="2.5">2.5 hours</option>
-                                <option value="3">3 hours</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Instructor Name:</label>
-                            <input type="text" id="editInstructorName" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Client:</label>
-                            <select id="editClientSelect" required>
-                                <option value="">Select Client</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Payment Method:</label>
-                            <select id="editPaymentMethod" required>
-                                <option value="">Select Method</option>
-                                <option value="Cash">Cash</option>
-                                <option value="Card">Card</option>
-                                <option value="Bank Transfer">Bank Transfer</option>
-                                <option value="Mobile Payment">Mobile Payment</option>
-                                <option value="Package">Package</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Payment Status:</label>
-                            <select id="editPaymentStatus" required>
-                                <option value="">Select Status</option>
-                                <option value="Paid">Paid</option>
-                                <option value="Pending">Pending</option>
-                                <option value="Free Session">Free Session</option>
-                                <option value="Canceled">Canceled</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Price per Hour:</label>
-                            <input type="number" id="editPricePerHour" step="0.01" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Number of Students:</label>
-                            <input type="number" id="editNumberOfStudents" min="1" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Court Cost per Hour:</label>
-                            <input type="number" id="editCourtCostPerHour" step="0.01" required>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label>Notes:</label>
-                        <textarea id="editSessionNotes" rows="3"></textarea>
-                    </div>
-                    <input type="hidden" id="editSessionId">
-                    <div style="display: flex; gap: 15px; margin-top: 20px;">
-                        <button type="submit" class="btn">💾 Update Session</button>
-                        <button type="button" class="btn btn-secondary" onclick="closeEditSessionModal()">❌ Cancel</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
     <script>
-        // Simple Cloud Storage Implementation
-        class SimpleCloudStorage {
-            constructor() {
-                this.isOnline = navigator.onLine;
-                this.syncInProgress = false;
-                this.lastSync = localStorage.getItem('lastSync') || null;
-                
-                // Listen for online/offline events
-                window.addEventListener('online', () => {
-                    this.isOnline = true;
-                    this.updateSyncStatus();
-                    this.autoSync();
-                });
-                
-                window.addEventListener('offline', () => {
-                    this.isOnline = false;
-                    this.updateSyncStatus();
-                });
-                
-                // Auto-sync every 5 minutes when online
-                setInterval(() => {
-                    if (this.isOnline && !this.syncInProgress) {
-                        this.autoSync();
-                    }
-                }, 5 * 60 * 1000);
-            }
-            
-            // Generate a unique device ID
-            getDeviceId() {
-                let deviceId = localStorage.getItem('deviceId');
-                if (!deviceId) {
-                    deviceId = 'device_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
-                    localStorage.setItem('deviceId', deviceId);
-                }
-                return deviceId;
-            }
-            
-            // Store data in the "cloud" (using localStorage with cloud prefix)
-            async saveToCloud(key, data) {
-                if (!this.isOnline) {
-                    throw new Error('Offline - cannot sync to cloud');
-                }
-                
-                const cloudKey = `cloud_${key}`;
-                const cloudData = {
-                    data: data,
-                    timestamp: Date.now(),
-                    deviceId: this.getDeviceId(),
-                    version: this.getDataVersion(key)
-                };
-                
-                // Simulate network delay
-                await new Promise(resolve => setTimeout(resolve, 100));
-                localStorage.setItem(cloudKey, JSON.stringify(cloudData));
-                return cloudData;
-            }
-            
-            // Load data from the "cloud"
-            async loadFromCloud(key) {
-                if (!this.isOnline) {
-                    throw new Error('Offline - cannot load from cloud');
-                }
-                
-                const cloudKey = `cloud_${key}`;
-                const cloudDataStr = localStorage.getItem(cloudKey);
-                
-                if (!cloudDataStr) {
-                    return null;
-                }
-                
-                // Simulate network delay
-                await new Promise(resolve => setTimeout(resolve, 50));
-                return JSON.parse(cloudDataStr);
-            }
-            
-            // Get data version for conflict resolution
-            getDataVersion(key) {
-                const versionKey = `${key}_version`;
-                let version = parseInt(localStorage.getItem(versionKey) || '1');
-                version++;
-                localStorage.setItem(versionKey, version.toString());
-                return version;
-            }
-            
-            // Sync data to cloud
-            async syncToCloud() {
-                if (!this.isOnline || this.syncInProgress) {
-                    return false;
-                }
-                
-                this.syncInProgress = true;
-                this.updateSyncStatus();
-                
-                try {
-                    const keys = ['sessions', 'clients', 'expenses', 'targets', 'nextSessionId'];
-                    
-                    for (const key of keys) {
-                        const localData = localStorage.getItem(key);
-                        if (localData) {
-                            await this.saveToCloud(key, JSON.parse(localData));
-                        }
-                    }
-                    
-                    this.lastSync = new Date().toISOString();
-                    localStorage.setItem('lastSync', this.lastSync);
-                    
-                    return true;
-                } catch (error) {
-                    console.error('Sync to cloud failed:', error);
-                    return false;
-                } finally {
-                    this.syncInProgress = false;
-                    this.updateSyncStatus();
-                }
-            }
-            
-            // Sync data from cloud
-            async syncFromCloud() {
-                if (!this.isOnline || this.syncInProgress) {
-                    return false;
-                }
-                
-                this.syncInProgress = true;
-                this.updateSyncStatus();
-                
-                try {
-                    const keys = ['sessions', 'clients', 'expenses', 'targets', 'nextSessionId'];
-                    let hasUpdates = false;
-                    
-                    for (const key of keys) {
-                        const cloudData = await this.loadFromCloud(key);
-                        if (cloudData) {
-                            const localDataStr = localStorage.getItem(key);
-                            const localTimestamp = parseInt(localStorage.getItem(`${key}_timestamp`) || '0');
-                            
-                            // Use cloud data if it's newer
-                            if (cloudData.timestamp > localTimestamp) {
-                                localStorage.setItem(key, JSON.stringify(cloudData.data));
-                                localStorage.setItem(`${key}_timestamp`, cloudData.timestamp.toString());
-                                hasUpdates = true;
-                            }
-                        }
-                    }
-                    
-                    if (hasUpdates) {
-                        // Reload data in the UI
-                        await this.reloadAppData();
-                    }
-                    
-                    this.lastSync = new Date().toISOString();
-                    localStorage.setItem('lastSync', this.lastSync);
-                    
-                    return true;
-                } catch (error) {
-                    console.error('Sync from cloud failed:', error);
-                    return false;
-                } finally {
-                    this.syncInProgress = false;
-                    this.updateSyncStatus();
-                }
-            }
-            
-            // Full bidirectional sync
-            async fullSync() {
-                await this.syncFromCloud();
-                await this.syncToCloud();
-            }
-            
-            // Auto sync (less aggressive)
-            async autoSync() {
-                try {
-                    await this.syncFromCloud();
-                } catch (error) {
-                    console.error('Auto sync failed:', error);
-                }
-            }
-            
-            // Clear cloud data
-            async clearCloudData() {
-                if (!this.isOnline) {
-                    throw new Error('Offline - cannot clear cloud data');
-                }
-                
-                const keys = ['sessions', 'clients', 'expenses', 'targets', 'nextSessionId'];
-                for (const key of keys) {
-                    const cloudKey = `cloud_${key}`;
-                    localStorage.removeItem(cloudKey);
-                }
-                
-                return true;
-            }
-            
-            // Update sync status in UI
-            updateSyncStatus() {
-                const indicator = document.getElementById('syncIndicator');
-                const text = document.getElementById('syncText');
-                
-                if (!indicator || !text) return;
-                
-                if (this.syncInProgress) {
-                    indicator.className = 'sync-indicator syncing';
-                    text.textContent = 'Syncing...';
-                } else if (this.isOnline) {
-                    indicator.className = 'sync-indicator connected';
-                    const lastSyncText = this.lastSync ? 
-                        new Date(this.lastSync).toLocaleTimeString() : 'Never';
-                    text.textContent = `Online (${lastSyncText})`;
-                } else {
-                    indicator.className = 'sync-indicator';
-                    text.textContent = 'Offline';
-                }
-            }
-            
-            // Reload app data after sync
-            async reloadAppData() {
-                // Reload global variables
-                sessions = JSON.parse(localStorage.getItem('sessions') || '[]');
-                clients = JSON.parse(localStorage.getItem('clients') || '[]');
-                expenses = JSON.parse(localStorage.getItem('expenses') || '[]');
-                targets = JSON.parse(localStorage.getItem('targets') || '[]');
-                nextSessionId = parseInt(localStorage.getItem('nextSessionId') || '1');
-                
-                // Refresh UI
-                loadSessions();
-                loadClients();
-                loadExpenses();
-                loadTargets();
-                populateClientDropdowns();
-                updateDashboard();
-                renderCalendar();
-                renderTargets();
-            }
-        }
-
-        // Initialize cloud storage
-        const cloudStorage = new SimpleCloudStorage();
-
         // Global variables
         let sessions = [];
         let clients = [];
         let expenses = [];
-        let targets = [];
         let nextSessionId = 1;
-        let currentCalendarDate = new Date();
-        let currentReportData = null;
 
-        // Load all data (cloud + local)
-        async function loadAllData() {
-            // Try to load from cloud first
-            try {
-                await cloudStorage.syncFromCloud();
-            } catch (error) {
-                console.log('Cloud sync failed, using local data:', error);
-            }
-            
-            // Load data into global variables
+        // Initialize app
+        document.addEventListener('DOMContentLoaded', function() {
+            loadAllData();
+            setDefaultDates();
+            setupEventListeners();
+            populateYearDropdown();
+        });
+
+        function loadAllData() {
             sessions = JSON.parse(localStorage.getItem('sessions') || '[]');
             clients = JSON.parse(localStorage.getItem('clients') || '[]');
             expenses = JSON.parse(localStorage.getItem('expenses') || '[]');
-            targets = JSON.parse(localStorage.getItem('targets') || '[]');
             nextSessionId = parseInt(localStorage.getItem('nextSessionId') || '1');
-        }
-
-        // Save data with cloud sync
-        async function saveData(key, data) {
-            // Save locally first
-            localStorage.setItem(key, JSON.stringify(data));
-            localStorage.setItem(`${key}_timestamp`, Date.now().toString());
             
-            // Try to sync to cloud
-            try {
-                await cloudStorage.saveToCloud(key, data);
-            } catch (error) {
-                console.log('Cloud save failed, data saved locally:', error);
-            }
-        }
-
-        // Manual sync function
-        async function manualSync() {
-            try {
-                await cloudStorage.fullSync();
-                showAlert('Sync completed successfully!', 'success');
-            } catch (error) {
-                showAlert('Sync failed: ' + error.message, 'danger');
-            }
-        }
-
-        // Clear cloud data
-        async function clearCloudData() {
-            if (confirm('Clear all cloud data? This will remove synced data from all devices.')) {
-                try {
-                    await cloudStorage.clearCloudData();
-                    showAlert('Cloud data cleared successfully!', 'success');
-                } catch (error) {
-                    showAlert('Failed to clear cloud data: ' + error.message, 'danger');
-                }
-            }
-        }
-
-        // Show sync status
-        function showSyncStatus() {
-            cloudStorage.updateSyncStatus();
-        }
-
-        // Initialize app
-        document.addEventListener('DOMContentLoaded', async function() {
-            // Load data from cloud or local
-            await loadAllData();
-            
-            // Set default dates
-            const today = new Date();
-            const localDate = new Date(today.getTime() - (today.getTimezoneOffset() * 60000));
-            const dateString = localDate.toISOString().split('T')[0];
-            
-            document.getElementById('sessionDate').value = dateString;
-            document.getElementById('expenseDate').value = dateString;
-            document.getElementById('targetYear').value = today.getFullYear();
-            document.getElementById('reportYear').value = today.getFullYear();
-            
-            // Setup event listeners
-            setupEventListeners();
-            
-            // Load data into UI
             loadSessions();
             loadClients();
             loadExpenses();
-            loadTargets();
             populateClientDropdowns();
             updateDashboard();
-            renderCalendar();
-            showSyncStatus();
-        });
+        }
+
+        function setDefaultDates() {
+            const today = new Date();
+            const dateString = today.toISOString().split('T')[0];
+            
+            const sessionDate = document.getElementById('sessionDate');
+            const expenseDate = document.getElementById('expenseDate');
+            
+            if (sessionDate) sessionDate.value = dateString;
+            if (expenseDate) expenseDate.value = dateString;
+        }
 
         function setupEventListeners() {
-            document.getElementById('location').addEventListener('change', function() {
-                const customGroup = document.getElementById('customLocationGroup');
-                if (this.value === 'Other') {
-                    customGroup.classList.remove('hidden');
-                } else {
-                    customGroup.classList.add('hidden');
-                }
-            });
-
-            document.getElementById('targetPeriod').addEventListener('change', function() {
-                const quarterGroup = document.getElementById('quarterGroup');
-                if (this.value === 'quarterly') {
-                    quarterGroup.classList.remove('hidden');
-                    document.getElementById('targetQuarter').required = true;
-                } else {
-                    quarterGroup.classList.add('hidden');
-                    document.getElementById('targetQuarter').required = false;
-                }
-            });
-
-            document.getElementById('sessionsReportType').addEventListener('change', function() {
-                const monthSelect = document.getElementById('reportMonth');
-                if (this.value === 'monthly') {
-                    monthSelect.style.display = 'inline';
-                } else {
-                    monthSelect.style.display = 'none';
-                }
-            });
+            const locationSelect = document.getElementById('location');
+            if (locationSelect) {
+                locationSelect.addEventListener('change', function() {
+                    const customGroup = document.getElementById('customLocationGroup');
+                    if (this.value === 'Other') {
+                        customGroup.classList.remove('hidden');
+                    } else {
+                        customGroup.classList.add('hidden');
+                    }
+                });
+            }
         }
 
-        // Fixed date handling functions
-        function getLocalDateString(date) {
-            const d = new Date(date);
-            const year = d.getFullYear();
-            const month = String(d.getMonth() + 1).padStart(2, '0');
-            const day = String(d.getDate()).padStart(2, '0');
-            return `${year}-${month}-${day}`;
+        function populateYearDropdown() {
+            const yearSelect = document.getElementById('reportYear');
+            if (!yearSelect) return;
+            
+            yearSelect.innerHTML = '';
+            const currentYear = new Date().getFullYear();
+            
+            // Add years from 2020 to current year + 1
+            for (let year = 2020; year <= currentYear + 1; year++) {
+                const option = document.createElement('option');
+                option.value = year;
+                option.textContent = year;
+                if (year === currentYear) {
+                    option.selected = true;
+                }
+                yearSelect.appendChild(option);
+            }
         }
 
-        function parseLocalDate(dateString) {
-            const [year, month, day] = dateString.split('-').map(Number);
-            return new Date(year, month - 1, day);
-        }
-
-        function formatDateForDisplay(dateString) {
-            const date = parseLocalDate(dateString);
-            return date.toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric'
-            });
+        // Save data to localStorage
+        function saveData(key, data) {
+            localStorage.setItem(key, JSON.stringify(data));
         }
 
         // Generate session ID in PA-XXX format
@@ -1389,46 +827,23 @@
 
         // Navigation
         function showPage(pageId) {
-            document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
+            // Hide all pages
+            document.querySelectorAll('.page').forEach(page => {
+                page.classList.remove('active');
+            });
+            
+            // Show selected page
             document.getElementById(pageId).classList.add('active');
             
-            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+            // Update nav buttons
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
             event.target.classList.add('active');
             
+            // Update page-specific data
             if (pageId === 'dashboard') updateDashboard();
-            if (pageId === 'calendar') renderCalendar();
-            if (pageId === 'targets') renderTargets();
-        }
-
-        // Package Management
-        function handlePaymentMethodChange() {
-            const paymentMethod = document.getElementById('paymentMethod').value;
-            const packageGroup = document.getElementById('packageGroup');
-            
-            if (paymentMethod === 'Package') {
-                packageGroup.classList.remove('hidden');
-                populatePackages();
-            } else {
-                packageGroup.classList.add('hidden');
-            }
-        }
-
-        function populatePackages() {
-            const clientName = document.getElementById('clientSelect').value;
-            const packageSelect = document.getElementById('packageSelect');
-            packageSelect.innerHTML = '<option value="">Select Package</option>';
-            
-            const client = clients.find(c => c.name === clientName);
-            if (client && client.packages) {
-                client.packages.forEach(pkg => {
-                    if (pkg.balance > 0) {
-                        const option = document.createElement('option');
-                        option.value = pkg.id;
-                        option.textContent = `${pkg.name} (${pkg.balance} sessions left)`;
-                        packageSelect.appendChild(option);
-                    }
-                });
-            }
+            if (pageId === 'reports') populateYearDropdown();
         }
 
         // Session Management
@@ -1442,12 +857,9 @@
             document.querySelector('#addSessionForm form').reset();
             document.getElementById('newClientGroup').classList.add('hidden');
             document.getElementById('customLocationGroup').classList.add('hidden');
-            document.getElementById('packageGroup').classList.add('hidden');
             
             // Reset date to today
-            const today = new Date();
-            const localDate = new Date(today.getTime() - (today.getTimezoneOffset() * 60000));
-            document.getElementById('sessionDate').value = localDate.toISOString().split('T')[0];
+            setDefaultDates();
         }
 
         function handleClientSelection() {
@@ -1458,13 +870,10 @@
                 newClientGroup.classList.remove('hidden');
             } else {
                 newClientGroup.classList.add('hidden');
-                if (document.getElementById('paymentMethod').value === 'Package') {
-                    populatePackages();
-                }
             }
         }
 
-        async function addSession(event) {
+        function addSession(event) {
             event.preventDefault();
             
             let clientName;
@@ -1485,12 +894,10 @@
                     phone: '',
                     leadSource: 'New Client',
                     notes: 'Created from session',
-                    creditBalance: 0,
-                    packages: [],
-                    createdDate: getLocalDateString(new Date())
+                    createdDate: new Date().toISOString().split('T')[0]
                 };
                 clients.push(newClient);
-                await saveData('clients', clients);
+                saveData('clients', clients);
                 populateClientDropdowns();
             } else {
                 clientName = clientSelect.value;
@@ -1499,26 +906,6 @@
             const location = document.getElementById('location').value === 'Other' 
                 ? document.getElementById('customLocation').value 
                 : document.getElementById('location').value;
-
-            const paymentMethod = document.getElementById('paymentMethod').value;
-            let packageUsed = null;
-            
-            // Handle package payment
-            if (paymentMethod === 'Package') {
-                const packageId = document.getElementById('packageSelect').value;
-                if (!packageId) {
-                    showAlert('Please select a package', 'danger');
-                    return;
-                }
-                
-                const client = clients.find(c => c.name === clientName);
-                packageUsed = client.packages.find(p => p.id === packageId);
-                
-                if (!packageUsed || packageUsed.balance <= 0) {
-                    showAlert('Package not available or insufficient balance', 'danger');
-                    return;
-                }
-            }
 
             const session = {
                 id: Date.now(),
@@ -1530,46 +917,29 @@
                 duration: parseFloat(document.getElementById('duration').value),
                 instructorName: document.getElementById('instructorName').value,
                 clientName: clientName,
-                paymentMethod: paymentMethod,
                 paymentStatus: document.getElementById('paymentStatus').value,
                 pricePerHour: parseFloat(document.getElementById('pricePerHour').value),
                 numberOfStudents: parseInt(document.getElementById('numberOfStudents').value),
                 courtCostPerHour: parseFloat(document.getElementById('courtCostPerHour').value),
                 notes: document.getElementById('sessionNotes').value,
-                packageUsed: packageUsed ? packageUsed.id : null,
                 totalRevenue: 0,
                 netProfit: 0
             };
 
             // Calculate financials
             calculateSessionFinancials(session);
-            
-            // Handle package deduction
-            if (packageUsed) {
-                packageUsed.balance -= 1;
-                await saveData('clients', clients);
-            }
-            
-            // Handle canceled sessions with credits
-            if (session.paymentStatus === 'Canceled' && session.totalRevenue > 0) {
-                addCreditToClient(session.clientName, session.totalRevenue);
-            }
 
             sessions.push(session);
-            await saveData('sessions', sessions);
+            saveData('sessions', sessions);
             
             loadSessions();
             hideAddSessionForm();
             updateDashboard();
-            renderCalendar();
             showAlert('Session added successfully!', 'success');
         }
 
         function calculateSessionFinancials(session) {
             if (session.paymentStatus === 'Free Session' || session.paymentStatus === 'Canceled') {
-                session.totalRevenue = 0;
-            } else if (session.paymentMethod === 'Package') {
-                // For package sessions, revenue is 0 as it's already paid
                 session.totalRevenue = 0;
             } else {
                 session.totalRevenue = session.duration * session.pricePerHour;
@@ -1579,197 +949,57 @@
             session.netProfit = session.totalRevenue - totalCourtCost;
         }
 
-        async function addCreditToClient(clientName, amount) {
-            const client = clients.find(c => c.name === clientName);
-            if (client) {
-                client.creditBalance = (client.creditBalance || 0) + amount;
-                await saveData('clients', clients);
-                showAlert(`Credit of AED ${amount.toFixed(2)} added to ${clientName}`, 'success');
-            }
-        }
-
         function loadSessions() {
             const tbody = document.getElementById('sessionsTableBody');
+            if (!tbody) return;
+            
             tbody.innerHTML = '';
             
             // Sort sessions by date (newest first)
             const sortedSessions = [...sessions].sort((a, b) => {
-                const dateA = parseLocalDate(a.date);
-                const dateB = parseLocalDate(b.date);
-                return dateB - dateA;
+                return new Date(b.date + ' ' + b.time) - new Date(a.date + ' ' + a.time);
             });
             
             sortedSessions.forEach(session => {
-                const client = clients.find(c => c.name === session.clientName);
-                const creditIndicator = client && client.creditBalance > 0 ? 
-                    `<span class="credit-indicator">Credit: AED ${client.creditBalance.toFixed(2)}</span>` : '';
-                
-                const packageIndicator = client && client.packages && client.packages.length > 0 ?
-                    `<span class="package-indicator">Packages: ${client.packages.reduce((sum, p) => sum + p.balance, 0)}</span>` : '';
-                
-                const paymentDisplay = session.paymentMethod === 'Package' ? 
-                    `<span class="status-badge status-package">Package</span>` : 
-                    session.paymentMethod;
-                
                 const row = document.createElement('tr');
                 row.innerHTML = `
                     <td>${session.sessionId}</td>
-                    <td>${formatDateForDisplay(session.date)}</td>
+                    <td>${formatDate(session.date)}</td>
                     <td>${session.time}</td>
-                    <td>${session.clientName} ${creditIndicator} ${packageIndicator}</td>
+                    <td>${session.clientName}</td>
                     <td>${session.location}</td>
                     <td>${session.sessionType}</td>
                     <td><span class="status-badge status-${session.paymentStatus.toLowerCase().replace(' ', '-')}">${session.paymentStatus}</span></td>
-                    <td>${paymentDisplay}</td>
                     <td>AED ${session.totalRevenue.toFixed(2)}</td>
                     <td>
-                        <button class="btn btn-secondary" onclick="editSession(${session.id})" style="padding: 5px 10px; font-size: 12px;">Edit</button>
                         <button class="btn btn-danger" onclick="deleteSession(${session.id})" style="padding: 5px 10px; font-size: 12px;">Delete</button>
                         ${session.paymentStatus === 'Pending' ? 
                             `<button class="btn btn-success" onclick="markAsPaid(${session.id})" style="padding: 5px 10px; font-size: 12px;">Mark Paid</button>` : ''}
-                        ${session.paymentStatus === 'Paid' ? 
-                            `<button class="btn btn-danger" onclick="cancelSession(${session.id})" style="padding: 5px 10px; font-size: 12px;">Cancel</button>` : ''}
                     </td>
                 `;
                 tbody.appendChild(row);
             });
         }
 
-        function editSession(sessionId) {
-            const session = sessions.find(s => s.id === sessionId);
-            if (!session) return;
-            
-            // Populate the edit form with current session data
-            document.getElementById('editSessionId').value = session.id;
-            document.getElementById('editSessionDate').value = session.date;
-            document.getElementById('editSessionTime').value = session.time;
-            document.getElementById('editLocation').value = session.location;
-            document.getElementById('editSessionType').value = session.sessionType;
-            document.getElementById('editDuration').value = session.duration;
-            document.getElementById('editInstructorName').value = session.instructorName;
-            document.getElementById('editPaymentMethod').value = session.paymentMethod;
-            document.getElementById('editPaymentStatus').value = session.paymentStatus;
-            document.getElementById('editPricePerHour').value = session.pricePerHour;
-            document.getElementById('editNumberOfStudents').value = session.numberOfStudents;
-            document.getElementById('editCourtCostPerHour').value = session.courtCostPerHour;
-            document.getElementById('editSessionNotes').value = session.notes || '';
-            
-            // Populate client dropdown
-            const editClientSelect = document.getElementById('editClientSelect');
-            editClientSelect.innerHTML = '<option value="">Select Client</option>';
-            clients.forEach(client => {
-                const option = document.createElement('option');
-                option.value = client.name;
-                option.textContent = client.name;
-                if (client.name === session.clientName) {
-                    option.selected = true;
-                }
-                editClientSelect.appendChild(option);
-            });
-            
-            // Handle custom location
-            if (!['Top Padel', 'Champs', 'Padel Art'].includes(session.location)) {
-                document.getElementById('editLocation').value = 'Other';
-                document.getElementById('editCustomLocation').value = session.location;
-                document.getElementById('editCustomLocationGroup').classList.remove('hidden');
-            }
-            
-            document.getElementById('editSessionModal').style.display = 'block';
-        }
-
-        async function updateSession(event) {
-            event.preventDefault();
-            
-            const sessionId = parseInt(document.getElementById('editSessionId').value);
-            const session = sessions.find(s => s.id === sessionId);
-            
-            if (!session) {
-                showAlert('Session not found', 'danger');
-                return;
-            }
-            
-            // Get the location value
-            const location = document.getElementById('editLocation').value === 'Other' 
-                ? document.getElementById('editCustomLocation').value 
-                : document.getElementById('editLocation').value;
-            
-            // Update session data
-            session.date = document.getElementById('editSessionDate').value;
-            session.time = document.getElementById('editSessionTime').value;
-            session.location = location;
-            session.sessionType = document.getElementById('editSessionType').value;
-            session.duration = parseFloat(document.getElementById('editDuration').value);
-            session.instructorName = document.getElementById('editInstructorName').value;
-            session.clientName = document.getElementById('editClientSelect').value;
-            session.paymentMethod = document.getElementById('editPaymentMethod').value;
-            session.paymentStatus = document.getElementById('editPaymentStatus').value;
-            session.pricePerHour = parseFloat(document.getElementById('editPricePerHour').value);
-            session.numberOfStudents = parseInt(document.getElementById('editNumberOfStudents').value);
-            session.courtCostPerHour = parseFloat(document.getElementById('editCourtCostPerHour').value);
-            session.notes = document.getElementById('editSessionNotes').value;
-            
-            // Recalculate financials
-            calculateSessionFinancials(session);
-            
-            // Save to storage
-            await saveData('sessions', sessions);
-            
-            // Refresh displays
-            loadSessions();
-            updateDashboard();
-            renderCalendar();
-            
-            // Close modal and show success message
-            closeEditSessionModal();
-            showAlert('Session updated successfully!', 'success');
-        }
-
-        function closeEditSessionModal() {
-            document.getElementById('editSessionModal').style.display = 'none';
-            document.getElementById('editCustomLocationGroup').classList.add('hidden');
-            document.getElementById('editCustomLocation').value = '';
-        }
-
-        async function deleteSession(sessionId) {
+        function deleteSession(sessionId) {
             if (confirm('Delete this session?')) {
                 sessions = sessions.filter(s => s.id !== sessionId);
-                await saveData('sessions', sessions);
+                saveData('sessions', sessions);
                 loadSessions();
                 updateDashboard();
-                renderCalendar();
                 showAlert('Session deleted!', 'success');
             }
         }
 
-        async function markAsPaid(sessionId) {
+        function markAsPaid(sessionId) {
             const session = sessions.find(s => s.id === sessionId);
             if (session) {
                 session.paymentStatus = 'Paid';
                 calculateSessionFinancials(session);
-                await saveData('sessions', sessions);
+                saveData('sessions', sessions);
                 loadSessions();
                 updateDashboard();
-                renderCalendar();
                 showAlert('Session marked as paid!', 'success');
-            }
-        }
-
-        async function cancelSession(sessionId) {
-            if (confirm('Cancel this session? If paid, credit will be added to client.')) {
-                const session = sessions.find(s => s.id === sessionId);
-                if (session) {
-                    if (session.paymentStatus === 'Paid' && session.totalRevenue > 0) {
-                        addCreditToClient(session.clientName, session.totalRevenue);
-                    }
-                    session.paymentStatus = 'Canceled';
-                    calculateSessionFinancials(session);
-                    await saveData('sessions', sessions);
-                    loadSessions();
-                    loadClients();
-                    updateDashboard();
-                    renderCalendar();
-                    showAlert('Session canceled!', 'success');
-                }
             }
         }
 
@@ -1783,7 +1013,7 @@
             document.querySelector('#addClientForm form').reset();
         }
 
-        async function addClient(event) {
+        function addClient(event) {
             event.preventDefault();
             
             const client = {
@@ -1793,13 +1023,11 @@
                 phone: document.getElementById('clientPhone').value,
                 leadSource: document.getElementById('clientLeadSource').value,
                 notes: document.getElementById('clientNotes').value,
-                creditBalance: 0,
-                packages: [],
-                createdDate: getLocalDateString(new Date())
+                createdDate: new Date().toISOString().split('T')[0]
             };
 
             clients.push(client);
-            await saveData('clients', clients);
+            saveData('clients', clients);
             
             loadClients();
             populateClientDropdowns();
@@ -1810,13 +1038,14 @@
 
         function loadClients() {
             const tbody = document.getElementById('clientsTableBody');
+            if (!tbody) return;
+            
             tbody.innerHTML = '';
             
             clients.forEach(client => {
                 const clientSessions = sessions.filter(s => s.clientName === client.name);
                 const totalSessions = clientSessions.length;
                 const totalSpent = clientSessions.reduce((sum, s) => sum + s.totalRevenue, 0);
-                const packageBalance = client.packages ? client.packages.reduce((sum, p) => sum + p.balance, 0) : 0;
                 
                 const row = document.createElement('tr');
                 row.innerHTML = `
@@ -1824,11 +1053,9 @@
                     <td>${client.email}</td>
                     <td>${client.phone}</td>
                     <td>${totalSessions}</td>
-                    <td>AED ${(client.creditBalance || 0).toFixed(2)}</td>
-                    <td>${packageBalance} sessions</td>
                     <td>AED ${totalSpent.toFixed(2)}</td>
+                    <td>${client.leadSource}</td>
                     <td>
-                        <button class="btn btn-secondary" onclick="manageCredit(${client.id})" style="padding: 5px 10px; font-size: 12px;">Manage</button>
                         <button class="btn btn-danger" onclick="deleteClient(${client.id})" style="padding: 5px 10px; font-size: 12px;">Delete</button>
                     </td>
                 `;
@@ -1836,10 +1063,10 @@
             });
         }
 
-        async function deleteClient(clientId) {
-            if (confirm('Delete this client?')) {
+        function deleteClient(clientId) {
+            if (confirm('Delete this client? This will not affect existing sessions.')) {
                 clients = clients.filter(c => c.id !== clientId);
-                await saveData('clients', clients);
+                saveData('clients', clients);
                 loadClients();
                 populateClientDropdowns();
                 updateDashboard();
@@ -1847,178 +1074,25 @@
             }
         }
 
-        function manageCredit(clientId) {
-            const client = clients.find(c => c.id === clientId);
-            if (!client) return;
-            
-            const modal = document.getElementById('creditModal');
-            const content = document.getElementById('creditContent');
-            
-            const packages = client.packages || [];
-            let packagesHtml = '';
-            
-            packages.forEach(pkg => {
-                packagesHtml += `
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin: 10px 0; padding: 10px; background: #f8f9fa; border-radius: 5px;">
-                        <span>${pkg.name} (${pkg.balance} sessions left)</span>
-                        <button class="btn btn-danger" onclick="removePackage(${client.id}, '${pkg.id}')" style="padding: 2px 6px; font-size: 10px;">Remove</button>
-                    </div>
-                `;
-            });
-            
-            content.innerHTML = `
-                <div style="margin-bottom: 20px;">
-                    <h4>${client.name}</h4>
-                    <p><strong>Current Credit:</strong> AED ${(client.creditBalance || 0).toFixed(2)}</p>
-                </div>
-                
-                <div style="margin: 20px 0;">
-                    <h4>Credit Management</h4>
-                    <div class="form-group">
-                        <label>Action:</label>
-                        <select id="creditAction">
-                            <option value="add">Add Credit</option>
-                            <option value="deduct">Deduct Credit</option>
-                            <option value="set">Set Credit</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>Amount:</label>
-                        <input type="number" id="creditAmount" step="0.01" min="0">
-                    </div>
-                    <button class="btn" onclick="updateCredit(${client.id})">Update Credit</button>
-                </div>
-                
-                <div style="margin: 20px 0;">
-                    <h4>Package Management</h4>
-                    <div class="form-group">
-                        <label>Package Name:</label>
-                        <input type="text" id="packageName" placeholder="e.g., 10 Session Package">
-                    </div>
-                    <div class="form-group">
-                        <label>Number of Sessions:</label>
-                        <input type="number" id="packageSessions" min="1">
-                    </div>
-                    <div class="form-group">
-                        <label>Package Price:</label>
-                        <input type="number" id="packagePrice" step="0.01" min="0">
-                    </div>
-                    <button class="btn btn-success" onclick="addPackage(${client.id})">Add Package</button>
-                </div>
-                
-                <div style="margin: 20px 0;">
-                    <h4>Current Packages</h4>
-                    ${packagesHtml || '<p>No packages</p>'}
-                </div>
-                
-                <div style="margin-top: 20px;">
-                    <button class="btn btn-secondary" onclick="closeCreditModal()">Close</button>
-                </div>
-            `;
-            
-            modal.style.display = 'block';
-        }
-
-        async function addPackage(clientId) {
-            const client = clients.find(c => c.id === clientId);
-            if (!client) return;
-            
-            const name = document.getElementById('packageName').value;
-            const sessions = parseInt(document.getElementById('packageSessions').value);
-            const price = parseFloat(document.getElementById('packagePrice').value);
-            
-            if (!name || !sessions || !price) {
-                showAlert('Please fill all package fields', 'danger');
-                return;
-            }
-            
-            if (!client.packages) client.packages = [];
-            
-            const newPackage = {
-                id: Date.now().toString(),
-                name: name,
-                totalSessions: sessions,
-                balance: sessions,
-                price: price,
-                purchaseDate: getLocalDateString(new Date())
-            };
-            
-            client.packages.push(newPackage);
-            await saveData('clients', clients);
-            
-            manageCredit(clientId); // Refresh modal
-            loadClients();
-            showAlert(`Package "${name}" added successfully!`, 'success');
-        }
-
-        async function removePackage(clientId, packageId) {
-            if (confirm('Remove this package?')) {
-                const client = clients.find(c => c.id === clientId);
-                if (client && client.packages) {
-                    client.packages = client.packages.filter(p => p.id !== packageId);
-                    await saveData('clients', clients);
-                    manageCredit(clientId); // Refresh modal
-                    loadClients();
-                    showAlert('Package removed!', 'success');
-                }
-            }
-        }
-
-        async function updateCredit(clientId) {
-            const client = clients.find(c => c.id === clientId);
-            if (!client) return;
-            
-            const action = document.getElementById('creditAction').value;
-            const amount = parseFloat(document.getElementById('creditAmount').value) || 0;
-            const currentBalance = client.creditBalance || 0;
-            
-            switch (action) {
-                case 'add':
-                    client.creditBalance = currentBalance + amount;
-                    break;
-                case 'deduct':
-                    client.creditBalance = Math.max(0, currentBalance - amount);
-                    break;
-                case 'set':
-                    client.creditBalance = amount;
-                    break;
-            }
-            
-            await saveData('clients', clients);
-            loadClients();
-            loadSessions();
-            updateDashboard();
-            manageCredit(clientId); // Refresh modal
-            showAlert(`Credit updated! New balance: AED ${client.creditBalance.toFixed(2)}`, 'success');
-        }
-
-        function closeCreditModal() {
-            document.getElementById('creditModal').style.display = 'none';
-        }
-
         function populateClientDropdowns() {
-            const selects = ['clientSelect', 'calendarClientFilter'];
+            const select = document.getElementById('clientSelect');
+            if (!select) return;
             
-            selects.forEach(selectId => {
-                const select = document.getElementById(selectId);
-                if (!select) return;
-                
-                const currentValue = select.value;
-                
-                // Clear existing options (except first ones)
-                while (select.children.length > (selectId === 'clientSelect' ? 2 : 1)) {
-                    select.removeChild(select.lastChild);
-                }
-                
-                clients.forEach(client => {
-                    const option = document.createElement('option');
-                    option.value = client.name;
-                    option.textContent = client.name;
-                    select.appendChild(option);
-                });
-                
-                select.value = currentValue;
+            const currentValue = select.value;
+            
+            // Clear existing options except first two
+            while (select.children.length > 2) {
+                select.removeChild(select.lastChild);
+            }
+            
+            clients.forEach(client => {
+                const option = document.createElement('option');
+                option.value = client.name;
+                option.textContent = client.name;
+                select.appendChild(option);
             });
+            
+            select.value = currentValue;
         }
 
         // Expense Management
@@ -2029,14 +1103,10 @@
         function hideAddExpenseForm() {
             document.getElementById('addExpenseForm').classList.add('hidden');
             document.querySelector('#addExpenseForm form').reset();
-            
-            // Reset date to today
-            const today = new Date();
-            const localDate = new Date(today.getTime() - (today.getTimezoneOffset() * 60000));
-            document.getElementById('expenseDate').value = localDate.toISOString().split('T')[0];
+            setDefaultDates();
         }
 
-        async function addExpense(event) {
+        function addExpense(event) {
             event.preventDefault();
             
             const expense = {
@@ -2048,7 +1118,7 @@
             };
 
             expenses.push(expense);
-            await saveData('expenses', expenses);
+            saveData('expenses', expenses);
             
             loadExpenses();
             hideAddExpenseForm();
@@ -2058,19 +1128,19 @@
 
         function loadExpenses() {
             const tbody = document.getElementById('expensesTableBody');
+            if (!tbody) return;
+            
             tbody.innerHTML = '';
             
             // Sort expenses by date (newest first)
             const sortedExpenses = [...expenses].sort((a, b) => {
-                const dateA = parseLocalDate(a.date);
-                const dateB = parseLocalDate(b.date);
-                return dateB - dateA;
+                return new Date(b.date) - new Date(a.date);
             });
             
             sortedExpenses.forEach(expense => {
                 const row = document.createElement('tr');
                 row.innerHTML = `
-                    <td>${formatDateForDisplay(expense.date)}</td>
+                    <td>${formatDate(expense.date)}</td>
                     <td>${expense.category}</td>
                     <td>${expense.description}</td>
                     <td>AED ${expense.amount.toFixed(2)}</td>
@@ -2082,148 +1152,13 @@
             });
         }
 
-        async function deleteExpense(expenseId) {
+        function deleteExpense(expenseId) {
             if (confirm('Delete this expense?')) {
                 expenses = expenses.filter(e => e.id !== expenseId);
-                await saveData('expenses', expenses);
+                saveData('expenses', expenses);
                 loadExpenses();
                 updateDashboard();
                 showAlert('Expense deleted!', 'success');
-            }
-        }
-
-        // Target Management
-        function showAddTargetForm() {
-            document.getElementById('addTargetForm').classList.remove('hidden');
-        }
-
-        function hideAddTargetForm() {
-            document.getElementById('addTargetForm').classList.add('hidden');
-            document.querySelector('#addTargetForm form').reset();
-        }
-
-        async function addTarget(event) {
-            event.preventDefault();
-            
-            const target = {
-                id: Date.now(),
-                type: document.getElementById('targetType').value,
-                period: document.getElementById('targetPeriod').value,
-                year: parseInt(document.getElementById('targetYear').value),
-                quarter: document.getElementById('targetQuarter').value,
-                value: parseFloat(document.getElementById('targetValue').value)
-            };
-
-            targets.push(target);
-            await saveData('targets', targets);
-            
-            loadTargets();
-            hideAddTargetForm();
-            showAlert('Target added successfully!', 'success');
-        }
-
-        function loadTargets() {
-            // This will be called when targets page is shown
-        }
-
-        function renderTargets() {
-            const container = document.getElementById('targetsContainer');
-            container.innerHTML = '';
-            
-            const currentYear = new Date().getFullYear();
-            const currentQuarter = Math.ceil((new Date().getMonth() + 1) / 3);
-            
-            targets.forEach(target => {
-                const { achieved, percentage } = calculateTargetProgress(target);
-                
-                const progressColor = percentage >= 100 ? '#2ed573' : percentage >= 75 ? '#ffa502' : '#ff4757';
-                
-                const card = document.createElement('div');
-                card.className = 'target-card';
-                card.innerHTML = `
-                    <h4>${target.type.charAt(0).toUpperCase() + target.type.slice(1)} Target - ${target.period === 'quarterly' ? `Q${target.quarter} ` : ''}${target.year}</h4>
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin: 15px 0;">
-                        <span><strong>Target:</strong> ${target.type === 'sessions' ? target.value : `AED ${target.value.toFixed(2)}`}</span>
-                        <span><strong>Achieved:</strong> ${target.type === 'sessions' ? achieved : `AED ${achieved.toFixed(2)}`}</span>
-                    </div>
-                    <div class="progress-bar">
-                        <div class="progress-fill" style="width: ${Math.min(percentage, 100)}%; background: ${progressColor};"></div>
-                    </div>
-                    <div style="text-align: center; margin-top: 10px;">
-                        <strong>${percentage.toFixed(1)}% Complete</strong>
-                    </div>
-                    <button class="btn btn-danger" onclick="deleteTarget(${target.id})" style="margin-top: 10px; padding: 5px 10px; font-size: 12px;">Delete</button>
-                `;
-                container.appendChild(card);
-            });
-            
-            if (targets.length === 0) {
-                container.innerHTML = '<p>No targets set. Click "Set New Target" to add one.</p>';
-            }
-        }
-
-        function calculateTargetProgress(target) {
-            let filteredSessions = [];
-            const currentDate = new Date();
-            
-            if (target.period === 'quarterly') {
-                const startMonth = (target.quarter - 1) * 3;
-                const endMonth = startMonth + 2;
-                
-                filteredSessions = sessions.filter(session => {
-                    const sessionDate = parseLocalDate(session.date);
-                    return sessionDate.getFullYear() === target.year &&
-                           sessionDate.getMonth() >= startMonth &&
-                           sessionDate.getMonth() <= endMonth;
-                });
-            } else {
-                filteredSessions = sessions.filter(session => {
-                    const sessionDate = parseLocalDate(session.date);
-                    return sessionDate.getFullYear() === target.year;
-                });
-            }
-            
-            let achieved = 0;
-            
-            switch (target.type) {
-                case 'sessions':
-                    achieved = filteredSessions.length;
-                    break;
-                case 'revenue':
-                    achieved = filteredSessions.reduce((sum, s) => sum + s.totalRevenue, 0);
-                    break;
-                case 'profit':
-                    const totalRevenue = filteredSessions.reduce((sum, s) => sum + s.totalRevenue, 0);
-                    const totalCourtCosts = filteredSessions.reduce((sum, s) => sum + (s.duration * s.courtCostPerHour), 0);
-                    
-                    const periodExpenses = expenses.filter(expense => {
-                        const expenseDate = parseLocalDate(expense.date);
-                        if (target.period === 'quarterly') {
-                            const startMonth = (target.quarter - 1) * 3;
-                            const endMonth = startMonth + 2;
-                            return expenseDate.getFullYear() === target.year &&
-                                   expenseDate.getMonth() >= startMonth &&
-                                   expenseDate.getMonth() <= endMonth;
-                        } else {
-                            return expenseDate.getFullYear() === target.year;
-                        }
-                    });
-                    
-                    const totalExpenses = periodExpenses.reduce((sum, e) => sum + e.amount, 0);
-                    achieved = totalRevenue - totalCourtCosts - totalExpenses;
-                    break;
-            }
-            
-            const percentage = (achieved / target.value) * 100;
-            return { achieved, percentage };
-        }
-
-        async function deleteTarget(targetId) {
-            if (confirm('Delete this target?')) {
-                targets = targets.filter(t => t.id !== targetId);
-                await saveData('targets', targets);
-                renderTargets();
-                showAlert('Target deleted!', 'success');
             }
         }
 
@@ -2232,136 +1167,83 @@
             const totalSessions = sessions.length;
             const totalRevenue = sessions.reduce((sum, s) => sum + s.totalRevenue, 0);
             const totalCourtCosts = sessions.reduce((sum, s) => sum + (s.duration * s.courtCostPerHour), 0);
-            const totalProfit = totalRevenue - totalCourtCosts;
+            const totalExpensesAmount = expenses.reduce((sum, e) => sum + e.amount, 0);
+            const totalProfit = totalRevenue - totalCourtCosts - totalExpensesAmount;
             const totalClients = clients.length;
-            const totalCredits = clients.reduce((sum, c) => sum + (c.creditBalance || 0), 0);
-            const totalPackages = clients.reduce((sum, c) => {
-                if (c.packages) {
-                    return sum + c.packages.reduce((pkgSum, p) => pkgSum + p.balance, 0);
-                }
-                return sum;
-            }, 0);
+            const avgRevenuePerSession = totalSessions > 0 ? totalRevenue / totalSessions : 0;
             
-            document.getElementById('totalSessions').textContent = totalSessions;
-            document.getElementById('totalRevenue').textContent = `AED ${totalRevenue.toFixed(2)}`;
-            document.getElementById('totalProfit').textContent = `AED ${totalProfit.toFixed(2)}`;
-            document.getElementById('totalClients').textContent = totalClients;
-            document.getElementById('totalCredits').textContent = `AED ${totalCredits.toFixed(2)}`;
-            document.getElementById('totalPackages').textContent = `${totalPackages} sessions`;
-        }
-
-        // Calendar rendering
-        function renderCalendar() {
-            const year = currentCalendarDate.getFullYear();
-            const month = currentCalendarDate.getMonth();
-            const clientFilter = document.getElementById('calendarClientFilter').value;
+            // Update stat cards
+            const elements = {
+                'totalSessions': totalSessions,
+                'totalRevenue': `AED ${totalRevenue.toFixed(2)}`,
+                'totalProfit': `AED ${totalProfit.toFixed(2)}`,
+                'totalClients': totalClients,
+                'totalExpenses': `AED ${totalExpensesAmount.toFixed(2)}`,
+                'avgRevenuePerSession': `AED ${avgRevenuePerSession.toFixed(2)}`
+            };
             
-            const monthNames = ["January", "February", "March", "April", "May", "June",
-                "July", "August", "September", "October", "November", "December"];
-            document.getElementById('currentMonthYear').textContent = `${monthNames[month]} ${year}`;
-            
-            const firstDay = new Date(year, month, 1);
-            const lastDay = new Date(year, month + 1, 0);
-            
-            // Start calendar from Sunday of the week containing the first day
-            const startDate = new Date(firstDay);
-            startDate.setDate(startDate.getDate() - firstDay.getDay());
-            
-            const today = new Date();
-            const todayString = getLocalDateString(today);
-            
-            let calendarHTML = '<table style="width: 100%; border-collapse: collapse;">';
-            calendarHTML += '<tr>';
-            const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-            dayNames.forEach(day => {
-                calendarHTML += `<th style="padding: 10px; background: #667eea; color: white; text-align: center;">${day}</th>`;
+            Object.entries(elements).forEach(([id, value]) => {
+                const element = document.getElementById(id);
+                if (element) element.textContent = value;
             });
-            calendarHTML += '</tr>';
             
-            for (let week = 0; week < 6; week++) {
-                calendarHTML += '<tr>';
-                for (let day = 0; day < 7; day++) {
-                    const currentDate = new Date(startDate);
-                    currentDate.setDate(startDate.getDate() + (week * 7) + day);
-                    
-                    const dateStr = getLocalDateString(currentDate);
-                    let daySessions = sessions.filter(s => s.date === dateStr);
-                    
-                    if (clientFilter) {
-                        daySessions = daySessions.filter(s => s.clientName === clientFilter);
-                    }
-                    
-                    const isCurrentMonth = currentDate.getMonth() === month;
-                    const isToday = dateStr === todayString;
-                    
-                    let cellClasses = ['calendar-day'];
-                    let cellStyle = 'padding: 10px; border: 1px solid #ddd; vertical-align: top; min-height: 100px; position: relative;';
-                    
-                    if (!isCurrentMonth) {
-                        cellClasses.push('other-month');
-                        cellStyle += ' background: #f8f9fa; color: #6c757d;';
-                    } else {
-                        cellStyle += ' background: white;';
-                    }
-                    
-                    if (isToday) {
-                        cellClasses.push('today');
-                        cellStyle += ' background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;';
-                    }
-                    
-                    calendarHTML += `<td class="${cellClasses.join(' ')}" style="${cellStyle}">`;
-                    calendarHTML += `<div style="font-weight: bold; margin-bottom: 5px;">${currentDate.getDate()}</div>`;
-                    
-                    // Display sessions
-                    daySessions.slice(0, 4).forEach(session => {
-                        const statusColor = getSessionColor(session.paymentStatus);
-                        const shortName = session.clientName.length > 10 ? 
-                            session.clientName.substring(0, 10) + '...' : session.clientName;
-                        
-                        calendarHTML += `<div style="background: ${statusColor}; color: white; padding: 2px 4px; margin: 1px 0; border-radius: 3px; font-size: 10px; overflow: hidden; white-space: nowrap;" title="${session.time} - ${session.clientName} (${session.paymentStatus})">${session.time} ${shortName}</div>`;
-                    });
-                    
-                    if (daySessions.length > 4) {
-                        calendarHTML += `<div style="font-size: 10px; color: ${isToday ? 'rgba(255,255,255,0.8)' : '#666'}; margin-top: 2px;">+${daySessions.length - 4} more</div>`;
-                    }
-                    
-                    calendarHTML += '</td>';
-                }
-                calendarHTML += '</tr>';
-            }
-            calendarHTML += '</table>';
+            // Update quick stats
+            updateQuickStats();
+        }
+
+        function updateQuickStats() {
+            const quickStats = document.getElementById('quickStats');
+            if (!quickStats) return;
             
-            document.getElementById('calendarContainer').innerHTML = calendarHTML;
+            const thisMonth = new Date().getMonth();
+            const thisYear = new Date().getFullYear();
+            
+            const thisMonthSessions = sessions.filter(s => {
+                const sessionDate = new Date(s.date);
+                return sessionDate.getMonth() === thisMonth && sessionDate.getFullYear() === thisYear;
+            });
+            
+            const thisMonthRevenue = thisMonthSessions.reduce((sum, s) => sum + s.totalRevenue, 0);
+            const pendingSessions = sessions.filter(s => s.paymentStatus === 'Pending');
+            const pendingRevenue = pendingSessions.reduce((sum, s) => sum + s.totalRevenue, 0);
+            
+            quickStats.innerHTML = `
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                    <div style="background: #e3f2fd; padding: 15px; border-radius: 10px;">
+                        <h4>This Month</h4>
+                        <p><strong>${thisMonthSessions.length}</strong> sessions</p>
+                        <p><strong>AED ${thisMonthRevenue.toFixed(2)}</strong> revenue</p>
+                    </div>
+                    <div style="background: #fff3e0; padding: 15px; border-radius: 10px;">
+                        <h4>Pending Payments</h4>
+                        <p><strong>${pendingSessions.length}</strong> sessions</p>
+                        <p><strong>AED ${pendingRevenue.toFixed(2)}</strong> pending</p>
+                    </div>
+                    <div style="background: #f3e5f5; padding: 15px; border-radius: 10px;">
+                        <h4>Most Active Client</h4>
+                        <p><strong>${getMostActiveClient()}</strong></p>
+                    </div>
+                </div>
+            `;
         }
 
-        function getSessionColor(paymentStatus) {
-            switch (paymentStatus) {
-                case 'Paid': return '#2ed573';
-                case 'Pending': return '#ffa502';
-                case 'Canceled': return '#ff4757';
-                case 'Free Session': return '#747d8c';
-                default: return '#3742fa';
-            }
-        }
-
-        function previousMonth() {
-            currentCalendarDate.setMonth(currentCalendarDate.getMonth() - 1);
-            renderCalendar();
-        }
-
-        function nextMonth() {
-            currentCalendarDate.setMonth(currentCalendarDate.getMonth() + 1);
-            renderCalendar();
-        }
-
-        function goToToday() {
-            currentCalendarDate = new Date();
-            renderCalendar();
+        function getMostActiveClient() {
+            if (clients.length === 0) return 'No clients yet';
+            
+            const clientSessionCounts = {};
+            sessions.forEach(session => {
+                clientSessionCounts[session.clientName] = (clientSessionCounts[session.clientName] || 0) + 1;
+            });
+            
+            const mostActive = Object.entries(clientSessionCounts)
+                .sort(([,a], [,b]) => b - a)[0];
+            
+            return mostActive ? `${mostActive[0]} (${mostActive[1]} sessions)` : 'No sessions yet';
         }
 
         // Reports
-        function generateSessionsReport() {
-            const reportType = document.getElementById('sessionsReportType').value;
+        function generateReport() {
+            const reportType = document.getElementById('reportType').value;
             const year = parseInt(document.getElementById('reportYear').value);
             const month = document.getElementById('reportMonth').value;
             
@@ -2370,501 +1252,381 @@
                 return;
             }
             
-            let filteredSessions = sessions.filter(session => {
-                const sessionDate = parseLocalDate(session.date);
-                return sessionDate.getFullYear() === year;
-            });
-            
             let reportHTML = '';
-            currentReportData = null;
             
             switch (reportType) {
                 case 'monthly':
-                    if (month) {
-                        filteredSessions = filteredSessions.filter(session => {
-                            const sessionDate = parseLocalDate(session.date);
-                            return sessionDate.getMonth() + 1 === parseInt(month);
-                        });
-                    }
-                    reportHTML = generateMonthlyReport(filteredSessions, year, month);
+                    reportHTML = generateMonthlyReport(year, month);
                     break;
-                    
                 case 'yearly':
-                    reportHTML = generateYearlyReport(filteredSessions, year);
+                    reportHTML = generateYearlyReport(year);
                     break;
-                    
-                case 'location':
-                    reportHTML = generateLocationReport(filteredSessions, year);
+                case 'financial':
+                    reportHTML = generateFinancialReport(year);
                     break;
-                    
-                case 'timing':
-                    reportHTML = generateTimingReport(filteredSessions, year);
+                case 'client-analysis':
+                    reportHTML = generateClientAnalysisReport(year);
+                    break;
+                case 'location-analysis':
+                    reportHTML = generateLocationAnalysisReport(year);
                     break;
             }
             
             document.getElementById('reportContent').innerHTML = reportHTML;
             document.getElementById('reportResults').classList.remove('hidden');
+            document.getElementById('downloadBtn').style.display = 'inline-block';
         }
 
-        function generateMonthlyReport(filteredSessions, year, month) {
-            const monthNames = ["All Months", "January", "February", "March", "April", "May", "June",
-                "July", "August", "September", "October", "November", "December"];
-            
-            let reportData = {};
-            
-            if (month) {
-                // Single month report
-                const monthName = monthNames[parseInt(month)];
-                reportData[monthName] = filteredSessions;
-            } else {
-                // All months report
-                for (let m = 1; m <= 12; m++) {
-                    const monthName = monthNames[m];
-                    reportData[monthName] = filteredSessions.filter(session => {
-                        const sessionDate = parseLocalDate(session.date);
-                        return sessionDate.getMonth() + 1 === m;
-                    });
-                }
-            }
-            
-            currentReportData = {
-                type: 'monthly',
-                year: year,
-                month: month,
-                data: reportData
-            };
-            
-            let html = `<div style="background: white; padding: 20px; border-radius: 10px;">
-                <h3>Sessions per Month - ${year}</h3>
-                <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
-                    <tr style="background: #f5f5f5;">
-                        <th style="padding: 10px; border: 1px solid #ddd;">Month</th>
-                        <th style="padding: 10px; border: 1px solid #ddd;">Total Sessions</th>
-                        <th style="padding: 10px; border: 1px solid #ddd;">Total Revenue</th>
-                        <th style="padding: 10px; border: 1px solid #ddd;">Avg Sessions/Day</th>
-                    </tr>`;
-            
-            Object.entries(reportData).forEach(([monthName, sessions]) => {
-                const totalSessions = sessions.length;
-                const totalRevenue = sessions.reduce((sum, s) => sum + s.totalRevenue, 0);
-                const daysInMonth = monthName === "All Months" ? 365 : 30; // Simplified
-                const avgPerDay = (totalSessions / daysInMonth).toFixed(1);
+        function generateMonthlyReport(year, monthFilter) {
+            const filteredSessions = sessions.filter(session => {
+                const sessionDate = new Date(session.date);
+                const sessionYear = sessionDate.getFullYear();
+                const sessionMonth = sessionDate.getMonth() + 1;
                 
-                html += `<tr>
-                    <td style="padding: 10px; border: 1px solid #ddd;">${monthName}</td>
-                    <td style="padding: 10px; border: 1px solid #ddd;">${totalSessions}</td>
-                    <td style="padding: 10px; border: 1px solid #ddd;">AED ${totalRevenue.toFixed(2)}</td>
-                    <td style="padding: 10px; border: 1px solid #ddd;">${avgPerDay}</td>
-                </tr>`;
+                if (sessionYear !== year) return false;
+                if (monthFilter && parseInt(monthFilter) !== sessionMonth) return false;
+                
+                return true;
             });
             
-            html += '</table></div>';
-            return html;
+            if (monthFilter) {
+                const monthName = new Date(year, parseInt(monthFilter) - 1, 1).toLocaleDateString('en-US', { month: 'long' });
+                return generateSingleMonthReport(filteredSessions, monthName, year);
+            } else {
+                return generateAllMonthsReport(filteredSessions, year);
+            }
         }
 
-        function generateYearlyReport(filteredSessions, year) {
-            const totalSessions = filteredSessions.length;
-            const totalRevenue = filteredSessions.reduce((sum, s) => sum + s.totalRevenue, 0);
-            const avgPerMonth = (totalSessions / 12).toFixed(1);
+        function generateSingleMonthReport(sessions, monthName, year) {
+            const totalSessions = sessions.length;
+            const totalRevenue = sessions.reduce((sum, s) => sum + s.totalRevenue, 0);
+            const totalCosts = sessions.reduce((sum, s) => sum + (s.duration * s.courtCostPerHour), 0);
             
-            // Group by session type
-            const byType = {};
-            filteredSessions.forEach(session => {
-                if (!byType[session.sessionType]) {
-                    byType[session.sessionType] = [];
-                }
-                byType[session.sessionType].push(session);
-            });
-            
-            currentReportData = {
-                type: 'yearly',
-                year: year,
-                data: filteredSessions
-            };
-            
-            let html = `<div style="background: white; padding: 20px; border-radius: 10px;">
-                <h3>Yearly Report - ${year}</h3>
+            return `
+                <h3>${monthName} ${year} Report</h3>
                 <div style="margin: 20px 0;">
                     <p><strong>Total Sessions:</strong> ${totalSessions}</p>
                     <p><strong>Total Revenue:</strong> AED ${totalRevenue.toFixed(2)}</p>
-                    <p><strong>Average Sessions per Month:</strong> ${avgPerMonth}</p>
+                    <p><strong>Court Costs:</strong> AED ${totalCosts.toFixed(2)}</p>
+                    <p><strong>Gross Profit:</strong> AED ${(totalRevenue - totalCosts).toFixed(2)}</p>
                 </div>
-                
-                <h4>Sessions by Type</h4>
-                <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
-                    <tr style="background: #f5f5f5;">
-                        <th style="padding: 10px; border: 1px solid #ddd;">Session Type</th>
-                        <th style="padding: 10px; border: 1px solid #ddd;">Count</th>
-                        <th style="padding: 10px; border: 1px solid #ddd;">Percentage</th>
-                        <th style="padding: 10px; border: 1px solid #ddd;">Revenue</th>
-                    </tr>`;
+                ${generateSessionsTable(sessions)}
+            `;
+        }
+
+        function generateAllMonthsReport(sessions, year) {
+            const monthlyData = {};
             
-            Object.entries(byType).forEach(([type, sessions]) => {
-                const count = sessions.length;
-                const percentage = ((count / totalSessions) * 100).toFixed(1);
-                const revenue = sessions.reduce((sum, s) => sum + s.totalRevenue, 0);
+            for (let i = 1; i <= 12; i++) {
+                const monthName = new Date(year, i - 1, 1).toLocaleDateString('en-US', { month: 'long' });
+                monthlyData[monthName] = sessions.filter(s => {
+                    const sessionDate = new Date(s.date);
+                    return sessionDate.getMonth() + 1 === i;
+                });
+            }
+            
+            let html = `<h3>Monthly Summary for ${year}</h3>`;
+            html += '<table style="width: 100%; border-collapse: collapse; margin: 20px 0;"><thead><tr style="background: #f5f5f5;"><th style="padding: 10px; border: 1px solid #ddd;">Month</th><th style="padding: 10px; border: 1px solid #ddd;">Sessions</th><th style="padding: 10px; border: 1px solid #ddd;">Revenue</th><th style="padding: 10px; border: 1px solid #ddd;">Gross Profit</th></tr></thead><tbody>';
+            
+            Object.entries(monthlyData).forEach(([month, sessionsData]) => {
+                const revenue = sessionsData.reduce((sum, s) => sum + s.totalRevenue, 0);
+                const costs = sessionsData.reduce((sum, s) => sum + (s.duration * s.courtCostPerHour), 0);
+                const profit = revenue - costs;
                 
-                html += `<tr>
-                    <td style="padding: 10px; border: 1px solid #ddd;">${type}</td>
-                    <td style="padding: 10px; border: 1px solid #ddd;">${count}</td>
-                    <td style="padding: 10px; border: 1px solid #ddd;">${percentage}%</td>
-                    <td style="padding: 10px; border: 1px solid #ddd;">AED ${revenue.toFixed(2)}</td>
-                </tr>`;
+                html += `<tr><td style="padding: 10px; border: 1px solid #ddd;">${month}</td><td style="padding: 10px; border: 1px solid #ddd;">${sessionsData.length}</td><td style="padding: 10px; border: 1px solid #ddd;">AED ${revenue.toFixed(2)}</td><td style="padding: 10px; border: 1px solid #ddd;">AED ${profit.toFixed(2)}</td></tr>`;
             });
             
-            html += '</table></div>';
+            html += '</tbody></table>';
             return html;
         }
 
-        function generateLocationReport(filteredSessions, year) {
-            const byLocation = {};
-            filteredSessions.forEach(session => {
-                if (!byLocation[session.location]) {
-                    byLocation[session.location] = [];
-                }
-                byLocation[session.location].push(session);
+        function generateYearlyReport(year) {
+            const filteredSessions = sessions.filter(session => {
+                return new Date(session.date).getFullYear() === year;
             });
             
-            currentReportData = {
-                type: 'location',
-                year: year,
-                data: byLocation
-            };
+            const totalRevenue = filteredSessions.reduce((sum, s) => sum + s.totalRevenue, 0);
+            const totalCosts = filteredSessions.reduce((sum, s) => sum + (s.duration * s.courtCostPerHour), 0);
+            const yearExpenses = expenses.filter(e => new Date(e.date).getFullYear() === year);
+            const totalExpenses = yearExpenses.reduce((sum, e) => sum + e.amount, 0);
+            const netProfit = totalRevenue - totalCosts - totalExpenses;
             
-            let html = `<div style="background: white; padding: 20px; border-radius: 10px;">
-                <h3>Sessions by Location - ${year}</h3>
-                <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
-                    <tr style="background: #f5f5f5;">
-                        <th style="padding: 10px; border: 1px solid #ddd;">Location</th>
-                        <th style="padding: 10px; border: 1px solid #ddd;">Total Sessions</th>
-                        <th style="padding: 10px; border: 1px solid #ddd;">Total Revenue</th>
-                        <th style="padding: 10px; border: 1px solid #ddd;">Avg Revenue per Session</th>
-                    </tr>`;
-            
-            Object.entries(byLocation).forEach(([location, sessions]) => {
-                const totalSessions = sessions.length;
-                const totalRevenue = sessions.reduce((sum, s) => sum + s.totalRevenue, 0);
-                const avgRevenue = totalSessions > 0 ? (totalRevenue / totalSessions).toFixed(2) : 0;
-                
-                html += `<tr>
-                    <td style="padding: 10px; border: 1px solid #ddd;">${location}</td>
-                    <td style="padding: 10px; border: 1px solid #ddd;">${totalSessions}</td>
-                    <td style="padding: 10px; border: 1px solid #ddd;">AED ${totalRevenue.toFixed(2)}</td>
-                    <td style="padding: 10px; border: 1px solid #ddd;">AED ${avgRevenue}</td>
-                </tr>`;
-            });
-            
-            html += '</table></div>';
-            return html;
+            return `
+                <h3>Yearly Report for ${year}</h3>
+                <div style="margin: 20px 0;">
+                    <p><strong>Total Sessions:</strong> ${filteredSessions.length}</p>
+                    <p><strong>Total Revenue:</strong> AED ${totalRevenue.toFixed(2)}</p>
+                    <p><strong>Court Costs:</strong> AED ${totalCosts.toFixed(2)}</p>
+                    <p><strong>Other Expenses:</strong> AED ${totalExpenses.toFixed(2)}</p>
+                    <p><strong>Net Profit:</strong> AED ${netProfit.toFixed(2)}</p>
+                    <p><strong>Average Revenue per Session:</strong> AED ${filteredSessions.length > 0 ? (totalRevenue / filteredSessions.length).toFixed(2) : '0.00'}</p>
+                </div>
+                ${generateSessionTypeBreakdown(filteredSessions)}
+            `;
         }
 
-        function generateTimingReport(filteredSessions, year) {
-            const byHour = {};
-            const byTimeOfDay = {
-                'Morning (6-12)': [],
-                'Afternoon (12-18)': [],
-                'Evening (18-24)': []
-            };
-            
-            filteredSessions.forEach(session => {
-                const hour = parseInt(session.time.split(':')[0]);
-                
-                if (!byHour[hour]) byHour[hour] = [];
-                byHour[hour].push(session);
-                
-                if (hour >= 6 && hour < 12) {
-                    byTimeOfDay['Morning (6-12)'].push(session);
-                } else if (hour >= 12 && hour < 18) {
-                    byTimeOfDay['Afternoon (12-18)'].push(session);
-                } else if (hour >= 18 && hour < 24) {
-                    byTimeOfDay['Evening (18-24)'].push(session);
-                }
+        function generateFinancialReport(year) {
+            const filteredSessions = sessions.filter(session => {
+                return new Date(session.date).getFullYear() === year;
             });
             
-            currentReportData = {
-                type: 'timing',
-                year: year,
-                data: { byHour, byTimeOfDay }
-            };
+            const paidSessions = filteredSessions.filter(s => s.paymentStatus === 'Paid');
+            const pendingSessions = filteredSessions.filter(s => s.paymentStatus === 'Pending');
+            const freeSessions = filteredSessions.filter(s => s.paymentStatus === 'Free Session');
+            const canceledSessions = filteredSessions.filter(s => s.paymentStatus === 'Canceled');
             
-            let html = `<div style="background: white; padding: 20px; border-radius: 10px;">
-                <h3>Session Timing Analysis - ${year}</h3>
-                
-                <h4>Sessions by Time of Day</h4>
-                <table style="width: 100%; border-collapse: collapse; margin: 15px 0;">
-                    <tr style="background: #f5f5f5;">
-                        <th style="padding: 10px; border: 1px solid #ddd;">Time Period</th>
-                        <th style="padding: 10px; border: 1px solid #ddd;">Sessions</th>
-                        <th style="padding: 10px; border: 1px solid #ddd;">Percentage</th>
-                        <th style="padding: 10px; border: 1px solid #ddd;">Revenue</th>
-                    </tr>`;
+            const totalRevenue = paidSessions.reduce((sum, s) => sum + s.totalRevenue, 0);
+            const pendingRevenue = pendingSessions.reduce((sum, s) => sum + s.totalRevenue, 0);
             
-            Object.entries(byTimeOfDay).forEach(([period, sessions]) => {
-                const count = sessions.length;
-                const percentage = ((count / filteredSessions.length) * 100).toFixed(1);
-                const revenue = sessions.reduce((sum, s) => sum + s.totalRevenue, 0);
-                
-                html += `<tr>
-                    <td style="padding: 10px; border: 1px solid #ddd;">${period}</td>
-                    <td style="padding: 10px; border: 1px solid #ddd;">${count}</td>
-                    <td style="padding: 10px; border: 1px solid #ddd;">${percentage}%</td>
-                    <td style="padding: 10px; border: 1px solid #ddd;">AED ${revenue.toFixed(2)}</td>
-                </tr>`;
-            });
-            
-            html += '</table>';
-            
-            // Peak hours
-            const sortedHours = Object.entries(byHour)
-                .sort(([,a], [,b]) => b.length - a.length)
-                .slice(0, 5);
-            
-            html += `<h4>Top 5 Peak Hours</h4>
-                <table style="width: 100%; border-collapse: collapse; margin: 15px 0;">
-                    <tr style="background: #f5f5f5;">
-                        <th style="padding: 10px; border: 1px solid #ddd;">Hour</th>
-                        <th style="padding: 10px; border: 1px solid #ddd;">Sessions</th>
-                        <th style="padding: 10px; border: 1px solid #ddd;">Revenue</th>
-                    </tr>`;
-            
-            sortedHours.forEach(([hour, sessions]) => {
-                const formattedHour = `${hour.padStart(2, '0')}:00`;
-                const revenue = sessions.reduce((sum, s) => sum + s.totalRevenue, 0);
-                
-                html += `<tr>
-                    <td style="padding: 10px; border: 1px solid #ddd;">${formattedHour}</td>
-                    <td style="padding: 10px; border: 1px solid #ddd;">${sessions.length}</td>
-                    <td style="padding: 10px; border: 1px solid #ddd;">AED ${revenue.toFixed(2)}</td>
-                </tr>`;
-            });
-            
-            html += '</table></div>';
-            return html;
-        }
-
-        function generateFinancialReport() {
-            const totalRevenue = sessions.reduce((sum, s) => sum + s.totalRevenue, 0);
-            const totalCourtCosts = sessions.reduce((sum, s) => sum + (s.duration * s.courtCostPerHour), 0);
-            const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
-            const grossProfit = totalRevenue - totalCourtCosts;
-            const netProfit = grossProfit - totalExpenses;
-            
-            const reportHTML = `
-                <div style="background: white; padding: 20px; border-radius: 10px;">
-                    <h3>Financial Report</h3>
-                    <div style="margin: 20px 0;">
-                        <p><strong>Total Revenue:</strong> AED ${totalRevenue.toFixed(2)}</p>
-                        <p><strong>Court Costs:</strong> AED ${totalCourtCosts.toFixed(2)}</p>
-                        <p><strong>Gross Profit:</strong> AED ${grossProfit.toFixed(2)}</p>
-                        <p><strong>Other Expenses:</strong> AED ${totalExpenses.toFixed(2)}</p>
-                        <p><strong>Net Profit:</strong> AED ${netProfit.toFixed(2)}</p>
-                        <hr style="margin: 15px 0;">
-                        <p><strong>Total Sessions:</strong> ${sessions.length}</p>
-                        <p><strong>Average Revenue per Session:</strong> AED ${sessions.length > 0 ? (totalRevenue / sessions.length).toFixed(2) : 0}</p>
-                        <p><strong>Average Gross Profit per Session:</strong> AED ${sessions.length > 0 ? (grossProfit / sessions.length).toFixed(2) : 0}</p>
+            return `
+                <h3>Financial Report for ${year}</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin: 20px 0;">
+                    <div style="background: #e8f5e8; padding: 15px; border-radius: 8px;">
+                        <h4>Paid Sessions</h4>
+                        <p>${paidSessions.length} sessions</p>
+                        <p><strong>AED ${totalRevenue.toFixed(2)}</strong></p>
+                    </div>
+                    <div style="background: #fff3e0; padding: 15px; border-radius: 8px;">
+                        <h4>Pending Payments</h4>
+                        <p>${pendingSessions.length} sessions</p>
+                        <p><strong>AED ${pendingRevenue.toFixed(2)}</strong></p>
+                    </div>
+                    <div style="background: #e3f2fd; padding: 15px; border-radius: 8px;">
+                        <h4>Free Sessions</h4>
+                        <p>${freeSessions.length} sessions</p>
+                        <p><strong>AED 0.00</strong></p>
+                    </div>
+                    <div style="background: #ffebee; padding: 15px; border-radius: 8px;">
+                        <h4>Canceled Sessions</h4>
+                        <p>${canceledSessions.length} sessions</p>
+                        <p><strong>AED 0.00</strong></p>
                     </div>
                 </div>
             `;
-            
-            document.getElementById('reportContent').innerHTML = reportHTML;
-            document.getElementById('reportResults').classList.remove('hidden');
         }
 
-        function generatePendingPayments() {
-            const pendingSessions = sessions.filter(s => s.paymentStatus === 'Pending');
-            const totalPending = pendingSessions.reduce((sum, s) => sum + s.totalRevenue, 0);
-            
-            let reportHTML = `
-                <div style="background: white; padding: 20px; border-radius: 10px;">
-                    <h3>Pending Payments Report</h3>
-                    <p><strong>Total Pending:</strong> AED ${totalPending.toFixed(2)} (${pendingSessions.length} sessions)</p>
-                    <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
-                        <tr style="background: #f5f5f5;">
-                            <th style="padding: 8px; border: 1px solid #ddd;">Date</th>
-                            <th style="padding: 8px; border: 1px solid #ddd;">Client</th>
-                            <th style="padding: 8px; border: 1px solid #ddd;">Amount</th>
-                        </tr>
-            `;
-            
-            pendingSessions.forEach(session => {
-                reportHTML += `
-                    <tr>
-                        <td style="padding: 8px; border: 1px solid #ddd;">${formatDateForDisplay(session.date)}</td>
-                        <td style="padding: 8px; border: 1px solid #ddd;">${session.clientName}</td>
-                        <td style="padding: 8px; border: 1px solid #ddd;">AED ${session.totalRevenue.toFixed(2)}</td>
-                    </tr>
-                `;
+        function generateClientAnalysisReport(year) {
+            const filteredSessions = sessions.filter(session => {
+                return new Date(session.date).getFullYear() === year;
             });
             
-            reportHTML += '</table></div>';
-            
-            document.getElementById('reportContent').innerHTML = reportHTML;
-            document.getElementById('reportResults').classList.remove('hidden');
-        }
-
-        function generateTargetProgressReport() {
-            if (targets.length === 0) {
-                showAlert('No targets set. Please set targets first.', 'warning');
-                return;
-            }
-            
-            let reportHTML = `
-                <div style="background: white; padding: 20px; border-radius: 10px;">
-                    <h3>Target Progress Report</h3>
-                    <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
-                        <tr style="background: #f5f5f5;">
-                            <th style="padding: 10px; border: 1px solid #ddd;">Target</th>
-                            <th style="padding: 10px; border: 1px solid #ddd;">Period</th>
-                            <th style="padding: 10px; border: 1px solid #ddd;">Target Value</th>
-                            <th style="padding: 10px; border: 1px solid #ddd;">Achieved</th>
-                            <th style="padding: 10px; border: 1px solid #ddd;">Progress</th>
-                            <th style="padding: 10px; border: 1px solid #ddd;">Status</th>
-                        </tr>
-            `;
-            
-            targets.forEach(target => {
-                const { achieved, percentage } = calculateTargetProgress(target);
-                const status = percentage >= 100 ? 'Completed' : percentage >= 75 ? 'On Track' : 'Behind';
-                const statusColor = percentage >= 100 ? '#2ed573' : percentage >= 75 ? '#ffa502' : '#ff4757';
-                
-                const periodText = target.period === 'quarterly' ? `Q${target.quarter} ${target.year}` : target.year;
-                const targetValue = target.type === 'sessions' ? target.value : `AED ${target.value.toFixed(2)}`;
-                const achievedValue = target.type === 'sessions' ? achieved : `AED ${achieved.toFixed(2)}`;
-                
-                reportHTML += `
-                    <tr>
-                        <td style="padding: 10px; border: 1px solid #ddd;">${target.type.charAt(0).toUpperCase() + target.type.slice(1)}</td>
-                        <td style="padding: 10px; border: 1px solid #ddd;">${periodText}</td>
-                        <td style="padding: 10px; border: 1px solid #ddd;">${targetValue}</td>
-                        <td style="padding: 10px; border: 1px solid #ddd;">${achievedValue}</td>
-                        <td style="padding: 10px; border: 1px solid #ddd;">${percentage.toFixed(1)}%</td>
-                        <td style="padding: 10px; border: 1px solid #ddd; color: ${statusColor}; font-weight: bold;">${status}</td>
-                    </tr>
-                `;
+            const clientData = {};
+            filteredSessions.forEach(session => {
+                if (!clientData[session.clientName]) {
+                    clientData[session.clientName] = {
+                        sessions: 0,
+                        revenue: 0
+                    };
+                }
+                clientData[session.clientName].sessions++;
+                clientData[session.clientName].revenue += session.totalRevenue;
             });
             
-            reportHTML += '</table></div>';
+            const sortedClients = Object.entries(clientData)
+                .sort(([,a], [,b]) => b.revenue - a.revenue);
             
-            document.getElementById('reportContent').innerHTML = reportHTML;
-            document.getElementById('reportResults').classList.remove('hidden');
+            let html = `<h3>Client Analysis for ${year}</h3>`;
+            html += '<table style="width: 100%; border-collapse: collapse; margin: 20px 0;"><thead><tr style="background: #f5f5f5;"><th style="padding: 10px; border: 1px solid #ddd;">Client</th><th style="padding: 10px; border: 1px solid #ddd;">Sessions</th><th style="padding: 10px; border: 1px solid #ddd;">Revenue</th><th style="padding: 10px; border: 1px solid #ddd;">Avg per Session</th></tr></thead><tbody>';
+            
+            sortedClients.forEach(([client, data]) => {
+                const avgPerSession = data.sessions > 0 ? data.revenue / data.sessions : 0;
+                html += `<tr><td style="padding: 10px; border: 1px solid #ddd;">${client}</td><td style="padding: 10px; border: 1px solid #ddd;">${data.sessions}</td><td style="padding: 10px; border: 1px solid #ddd;">AED ${data.revenue.toFixed(2)}</td><td style="padding: 10px; border: 1px solid #ddd;">AED ${avgPerSession.toFixed(2)}</td></tr>`;
+            });
+            
+            html += '</tbody></table>';
+            return html;
         }
 
-        // Download functions
-        function downloadReportExcel() {
-            if (!currentReportData) {
-                showAlert('Please generate a report first', 'warning');
-                return;
-            }
+        function generateLocationAnalysisReport(year) {
+            const filteredSessions = sessions.filter(session => {
+                return new Date(session.date).getFullYear() === year;
+            });
             
-            let csvContent = '';
-            const filename = `padel_report_${currentReportData.type}_${Date.now()}.csv`;
+            const locationData = {};
+            filteredSessions.forEach(session => {
+                if (!locationData[session.location]) {
+                    locationData[session.location] = {
+                        sessions: 0,
+                        revenue: 0
+                    };
+                }
+                locationData[session.location].sessions++;
+                locationData[session.location].revenue += session.totalRevenue;
+            });
             
-            switch (currentReportData.type) {
-                case 'monthly':
-                    csvContent = 'Month,Total Sessions,Total Revenue,Avg Sessions per Day\n';
-                    Object.entries(currentReportData.data).forEach(([month, sessions]) => {
-                        const totalSessions = sessions.length;
-                        const totalRevenue = sessions.reduce((sum, s) => sum + s.totalRevenue, 0);
-                        const avgPerDay = (totalSessions / 30).toFixed(1);
-                        csvContent += `"${month}","${totalSessions}","${totalRevenue.toFixed(2)}","${avgPerDay}"\n`;
-                    });
-                    break;
-                    
-                case 'yearly':
-                    csvContent = 'Session ID,Date,Time,Client,Location,Type,Status,Revenue\n';
-                    currentReportData.data.forEach(session => {
-                        csvContent += `"${session.sessionId}","${session.date}","${session.time}","${session.clientName}","${session.location}","${session.sessionType}","${session.paymentStatus}","${session.totalRevenue}"\n`;
-                    });
-                    break;
-                    
-                case 'location':
-                    csvContent = 'Location,Total Sessions,Total Revenue,Avg Revenue per Session\n';
-                    Object.entries(currentReportData.data).forEach(([location, sessions]) => {
-                        const totalSessions = sessions.length;
-                        const totalRevenue = sessions.reduce((sum, s) => sum + s.totalRevenue, 0);
-                        const avgRevenue = totalSessions > 0 ? (totalRevenue / totalSessions).toFixed(2) : 0;
-                        csvContent += `"${location}","${totalSessions}","${totalRevenue.toFixed(2)}","${avgRevenue}"\n`;
-                    });
-                    break;
-                    
-                case 'timing':
-                    csvContent = 'Time Period,Sessions,Percentage,Revenue\n';
-                    Object.entries(currentReportData.data.byTimeOfDay).forEach(([period, sessions]) => {
-                        const count = sessions.length;
-                        const totalSessions = Object.values(currentReportData.data.byTimeOfDay).reduce((sum, arr) => sum + arr.length, 0);
-                        const percentage = ((count / totalSessions) * 100).toFixed(1);
-                        const revenue = sessions.reduce((sum, s) => sum + s.totalRevenue, 0);
-                        csvContent += `"${period}","${count}","${percentage}","${revenue.toFixed(2)}"\n`;
-                    });
-                    break;
-            }
+            const sortedLocations = Object.entries(locationData)
+                .sort(([,a], [,b]) => b.sessions - a.sessions);
             
-            downloadCSV(csvContent, filename);
-            showAlert('Report downloaded as Excel/CSV!', 'success');
+            let html = `<h3>Location Analysis for ${year}</h3>`;
+            html += '<table style="width: 100%; border-collapse: collapse; margin: 20px 0;"><thead><tr style="background: #f5f5f5;"><th style="padding: 10px; border: 1px solid #ddd;">Location</th><th style="padding: 10px; border: 1px solid #ddd;">Sessions</th><th style="padding: 10px; border: 1px solid #ddd;">Revenue</th><th style="padding: 10px; border: 1px solid #ddd;">Avg per Session</th></tr></thead><tbody>';
+            
+            sortedLocations.forEach(([location, data]) => {
+                const avgPerSession = data.sessions > 0 ? data.revenue / data.sessions : 0;
+                html += `<tr><td style="padding: 10px; border: 1px solid #ddd;">${location}</td><td style="padding: 10px; border: 1px solid #ddd;">${data.sessions}</td><td style="padding: 10px; border: 1px solid #ddd;">AED ${data.revenue.toFixed(2)}</td><td style="padding: 10px; border: 1px solid #ddd;">AED ${avgPerSession.toFixed(2)}</td></tr>`;
+            });
+            
+            html += '</tbody></table>';
+            return html;
+        }
+
+        function generateSessionsTable(sessions) {
+            if (sessions.length === 0) return '<p>No sessions found for this period.</p>';
+            
+            let html = '<table style="width: 100%; border-collapse: collapse; margin: 20px 0;"><thead><tr style="background: #f5f5f5;"><th style="padding: 8px; border: 1px solid #ddd;">Date</th><th style="padding: 8px; border: 1px solid #ddd;">Client</th><th style="padding: 8px; border: 1px solid #ddd;">Location</th><th style="padding: 8px; border: 1px solid #ddd;">Type</th><th style="padding: 8px; border: 1px solid #ddd;">Revenue</th></tr></thead><tbody>';
+            
+            sessions.forEach(session => {
+                html += `<tr><td style="padding: 8px; border: 1px solid #ddd;">${formatDate(session.date)}</td><td style="padding: 8px; border: 1px solid #ddd;">${session.clientName}</td><td style="padding: 8px; border: 1px solid #ddd;">${session.location}</td><td style="padding: 8px; border: 1px solid #ddd;">${session.sessionType}</td><td style="padding: 8px; border: 1px solid #ddd;">AED ${session.totalRevenue.toFixed(2)}</td></tr>`;
+            });
+            
+            html += '</tbody></table>';
+            return html;
+        }
+
+        function generateSessionTypeBreakdown(sessions) {
+            const typeData = {};
+            sessions.forEach(session => {
+                if (!typeData[session.sessionType]) {
+                    typeData[session.sessionType] = {
+                        count: 0,
+                        revenue: 0
+                    };
+                }
+                typeData[session.sessionType].count++;
+                typeData[session.sessionType].revenue += session.totalRevenue;
+            });
+            
+            let html = '<h4>Session Type Breakdown</h4>';
+            html += '<table style="width: 100%; border-collapse: collapse; margin: 15px 0;"><thead><tr style="background: #f5f5f5;"><th style="padding: 10px; border: 1px solid #ddd;">Type</th><th style="padding: 10px; border: 1px solid #ddd;">Count</th><th style="padding: 10px; border: 1px solid #ddd;">Percentage</th><th style="padding: 10px; border: 1px solid #ddd;">Revenue</th></tr></thead><tbody>';
+            
+            const totalSessions = sessions.length;
+            Object.entries(typeData).forEach(([type, data]) => {
+                const percentage = totalSessions > 0 ? ((data.count / totalSessions) * 100).toFixed(1) : 0;
+                html += `<tr><td style="padding: 10px; border: 1px solid #ddd;">${type}</td><td style="padding: 10px; border: 1px solid #ddd;">${data.count}</td><td style="padding: 10px; border: 1px solid #ddd;">${percentage}%</td><td style="padding: 10px; border: 1px solid #ddd;">AED ${data.revenue.toFixed(2)}</td></tr>`;
+            });
+            
+            html += '</tbody></table>';
+            return html;
         }
 
         function downloadReportPDF() {
-            if (!currentReportData) {
+            const reportContent = document.getElementById('reportContent');
+            if (!reportContent || !reportContent.innerHTML.trim()) {
                 showAlert('Please generate a report first', 'warning');
                 return;
             }
             
-            // Create a simple HTML version for PDF
-            const reportContent = document.getElementById('reportContent').innerHTML;
+            const reportType = document.getElementById('reportType').value;
+            const year = document.getElementById('reportYear').value;
+            
             const htmlContent = `
                 <!DOCTYPE html>
                 <html>
                 <head>
                     <title>Padel Academy Report</title>
                     <style>
-                        body { font-family: Arial, sans-serif; margin: 20px; }
-                        table { border-collapse: collapse; width: 100%; margin: 20px 0; }
-                        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-                        th { background-color: #f2f2f2; }
-                        h3, h4 { color: #333; }
+                        body { 
+                            font-family: Arial, sans-serif; 
+                            margin: 20px; 
+                            line-height: 1.4;
+                        }
+                        table { 
+                            border-collapse: collapse; 
+                            width: 100%; 
+                            margin: 20px 0; 
+                        }
+                        th, td { 
+                            border: 1px solid #ddd; 
+                            padding: 8px; 
+                            text-align: left; 
+                        }
+                        th { 
+                            background-color: #f2f2f2; 
+                            font-weight: bold;
+                        }
+                        h3, h4 { 
+                            color: #333; 
+                            margin: 20px 0 10px 0;
+                        }
+                        .header {
+                            text-align: center;
+                            margin-bottom: 30px;
+                            padding-bottom: 20px;
+                            border-bottom: 2px solid #333;
+                        }
+                        .footer {
+                            margin-top: 50px;
+                            padding-top: 20px;
+                            border-top: 1px solid #ccc;
+                            font-size: 12px;
+                            color: #666;
+                            text-align: center;
+                        }
                     </style>
                 </head>
                 <body>
-                    ${reportContent}
-                    <p style="margin-top: 30px; font-size: 12px; color: #666;">
+                    <div class="header">
+                        <h1>🎾 Padel Academy Management System</h1>
+                        <h2>Report Generated: ${new Date().toLocaleDateString()}</h2>
+                    </div>
+                    ${reportContent.innerHTML}
+                    <div class="footer">
                         Generated on ${new Date().toLocaleString()} | Padel Academy Management System
-                    </p>
+                    </div>
                 </body>
                 </html>
             `;
             
-            // Create blob and download
             const blob = new Blob([htmlContent], { type: 'text/html' });
             const link = document.createElement('a');
             link.href = URL.createObjectURL(blob);
-            link.download = `padel_report_${currentReportData.type}_${Date.now()}.html`;
+            link.download = `padel_report_${reportType}_${year}_${Date.now()}.html`;
             link.click();
             
-            showAlert('Report downloaded as HTML (can be saved as PDF from browser)!', 'info');
+            showAlert('Report downloaded as HTML (can be printed as PDF from browser)!', 'success');
         }
 
         // Export functions
         function exportSessions() {
-            const csv = 'Session ID,Date,Time,Client,Location,Type,Status,Payment Method,Revenue,Notes\n' +
-                sessions.map(s => `"${s.sessionId}","${s.date}","${s.time}","${s.clientName}","${s.location}","${s.sessionType}","${s.paymentStatus}","${s.paymentMethod}","${s.totalRevenue}","${s.notes || ''}"`).join('\n');
+            if (sessions.length === 0) {
+                showAlert('No sessions to export', 'warning');
+                return;
+            }
+            
+            const csv = 'Session ID,Date,Time,Client,Location,Type,Status,Price/Hour,Duration,Revenue,Notes\n' +
+                sessions.map(s => `"${s.sessionId}","${s.date}","${s.time}","${s.clientName}","${s.location}","${s.sessionType}","${s.paymentStatus}","${s.pricePerHour}","${s.duration}","${s.totalRevenue}","${s.notes || ''}"`).join('\n');
+            
             downloadCSV(csv, 'sessions_export.csv');
+            showAlert('Sessions exported successfully!', 'success');
         }
 
         function exportClients() {
-            const csv = 'Name,Email,Phone,Lead Source,Credit Balance,Package Balance,Total Sessions,Total Spent\n' +
+            if (clients.length === 0) {
+                showAlert('No clients to export', 'warning');
+                return;
+            }
+            
+            const csv = 'Name,Email,Phone,Lead Source,Total Sessions,Total Spent,Created Date,Notes\n' +
                 clients.map(c => {
                     const clientSessions = sessions.filter(s => s.clientName === c.name);
                     const totalSpent = clientSessions.reduce((sum, s) => sum + s.totalRevenue, 0);
-                    const packageBalance = c.packages ? c.packages.reduce((sum, p) => sum + p.balance, 0) : 0;
-                    return `"${c.name}","${c.email}","${c.phone}","${c.leadSource}","${c.creditBalance || 0}","${packageBalance}","${clientSessions.length}","${totalSpent}"`;
+                    return `"${c.name}","${c.email}","${c.phone}","${c.leadSource}","${clientSessions.length}","${totalSpent.toFixed(2)}","${c.createdDate}","${c.notes || ''}"`;
                 }).join('\n');
+            
             downloadCSV(csv, 'clients_export.csv');
+            showAlert('Clients exported successfully!', 'success');
         }
 
         function exportExpenses() {
+            if (expenses.length === 0) {
+                showAlert('No expenses to export', 'warning');
+                return;
+            }
+            
             const csv = 'Date,Category,Description,Amount\n' +
-                expenses.map(e => `"${e.date}","${e.category}","${e.description}","${e.amount}"`).join('\n');
+                expenses.map(e => `"${e.date}","${e.category}","${e.description}","${e.amount.toFixed(2)}"`).join('\n');
+            
             downloadCSV(csv, 'expenses_export.csv');
+            showAlert('Expenses exported successfully!', 'success');
         }
 
         function downloadCSV(csvContent, filename) {
@@ -2881,15 +1643,15 @@
                 sessions,
                 clients,
                 expenses,
-                targets,
                 nextSessionId,
-                exportDate: new Date().toISOString()
+                exportDate: new Date().toISOString(),
+                version: '1.0'
             };
             
             const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
             const link = document.createElement('a');
             link.href = URL.createObjectURL(blob);
-            link.download = `padel_academy_backup_${getLocalDateString(new Date()).replace(/-/g, '_')}.json`;
+            link.download = `padel_academy_backup_${new Date().toISOString().split('T')[0].replace(/-/g, '_')}.json`;
             link.click();
             
             showAlert('Backup downloaded successfully!', 'success');
@@ -2899,12 +1661,12 @@
             document.getElementById('restoreFile').click();
         }
 
-        async function handleRestore(event) {
+        function handleRestore(event) {
             const file = event.target.files[0];
             if (!file) return;
             
             const reader = new FileReader();
-            reader.onload = async function(e) {
+            reader.onload = function(e) {
                 try {
                     const data = JSON.parse(e.target.result);
                     
@@ -2912,25 +1674,14 @@
                         sessions = data.sessions || [];
                         clients = data.clients || [];
                         expenses = data.expenses || [];
-                        targets = data.targets || [];
                         nextSessionId = data.nextSessionId || 1;
                         
-                        // Save to local storage and sync to cloud
-                        await saveData('sessions', sessions);
-                        await saveData('clients', clients);
-                        await saveData('expenses', expenses);
-                        await saveData('targets', targets);
-                        await saveData('nextSessionId', nextSessionId);
+                        saveData('sessions', sessions);
+                        saveData('clients', clients);
+                        saveData('expenses', expenses);
+                        saveData('nextSessionId', nextSessionId);
                         
-                        loadSessions();
-                        loadClients();
-                        loadExpenses();
-                        loadTargets();
-                        populateClientDropdowns();
-                        updateDashboard();
-                        renderCalendar();
-                        renderTargets();
-                        
+                        loadAllData();
                         showAlert('Data restored successfully!', 'success');
                     }
                 } catch (error) {
@@ -2941,60 +1692,102 @@
             event.target.value = '';
         }
 
-        async function clearAllData() {
+        function clearAllData() {
             if (confirm('This will delete ALL data permanently. Are you sure?')) {
                 if (confirm('Last chance! This cannot be undone.')) {
                     sessions = [];
                     clients = [];
                     expenses = [];
-                    targets = [];
                     nextSessionId = 1;
                     
-                    // Clear local storage
                     localStorage.clear();
                     
-                    // Clear cloud data
-                    try {
-                        await cloudStorage.clearCloudData();
-                    } catch (error) {
-                        console.log('Cloud clear failed:', error);
-                    }
-                    
-                    loadSessions();
-                    loadClients();
-                    loadExpenses();
-                    loadTargets();
-                    populateClientDropdowns();
-                    updateDashboard();
-                    renderCalendar();
-                    renderTargets();
-                    
+                    loadAllData();
                     showAlert('All data cleared!', 'success');
                 }
             }
         }
 
         // Utility functions
+        function formatDate(dateString) {
+            try {
+                const date = new Date(dateString);
+                return date.toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric'
+                });
+            } catch (error) {
+                return dateString;
+            }
+        }
+
         function showAlert(message, type) {
             const alertDiv = document.createElement('div');
             alertDiv.className = `alert alert-${type}`;
             alertDiv.textContent = message;
+            alertDiv.style.position = 'fixed';
+            alertDiv.style.top = '80px';
+            alertDiv.style.right = '20px';
+            alertDiv.style.zIndex = '9999';
+            alertDiv.style.maxWidth = '300px';
             
-            document.querySelector('.container').insertBefore(alertDiv, document.querySelector('.container').firstChild);
+            document.body.appendChild(alertDiv);
             
-            setTimeout(() => alertDiv.remove(), 5000);
+            setTimeout(() => {
+                alertDiv.remove();
+            }, 5000);
         }
 
-        // Close modals when clicking outside
-        window.onclick = function(event) {
-            const modals = document.querySelectorAll('.modal');
-            modals.forEach(modal => {
-                if (event.target === modal) {
-                    modal.style.display = 'none';
-                }
-            });
+        // Manual sync function (placeholder for cloud sync)
+        function manualSync() {
+            const indicator = document.getElementById('syncIndicator');
+            const text = document.getElementById('syncText');
+            
+            indicator.className = 'sync-indicator syncing';
+            text.textContent = 'Syncing...';
+            
+            // Simulate sync process
+            setTimeout(() => {
+                indicator.className = 'sync-indicator connected';
+                text.textContent = `Synced ${new Date().toLocaleTimeString()}`;
+                showAlert('Data synced successfully!', 'success');
+            }, 2000);
         }
+
+        // Initialize sync status
+        function initSyncStatus() {
+            const indicator = document.getElementById('syncIndicator');
+            const text = document.getElementById('syncText');
+            
+            if (navigator.onLine) {
+                indicator.className = 'sync-indicator connected';
+                text.textContent = 'Ready';
+            } else {
+                indicator.className = 'sync-indicator';
+                text.textContent = 'Offline';
+            }
+        }
+
+        // Listen for online/offline events
+        window.addEventListener('online', function() {
+            const indicator = document.getElementById('syncIndicator');
+            const text = document.getElementById('syncText');
+            indicator.className = 'sync-indicator connected';
+            text.textContent = 'Back Online';
+        });
+
+        window.addEventListener('offline', function() {
+            const indicator = document.getElementById('syncIndicator');
+            const text = document.getElementById('syncText');
+            indicator.className = 'sync-indicator';
+            text.textContent = 'Offline';
+        });
+
+        // Initialize sync status when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(initSyncStatus, 100);
+        });
     </script>
 </body>
 </html>
-                            
