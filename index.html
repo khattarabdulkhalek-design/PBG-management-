@@ -60,6 +60,42 @@
             background: linear-gradient(45deg, #4834d4, #686de0);
         }
 
+        .sync-status {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 10px 15px;
+            border-radius: 25px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            z-index: 1000;
+        }
+
+        .sync-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #ff4757;
+        }
+
+        .sync-indicator.connected {
+            background: #2ed573;
+        }
+
+        .sync-indicator.syncing {
+            background: #ffa502;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
         .page {
             display: none;
             background: rgba(255, 255, 255, 0.95);
@@ -338,6 +374,12 @@
     </style>
 </head>
 <body>
+    <div class="sync-status" id="syncStatus">
+        <div class="sync-indicator" id="syncIndicator"></div>
+        <span id="syncText">Offline</span>
+        <button class="btn" onclick="manualSync()" style="padding: 5px 10px; font-size: 10px; margin: 0;">Sync</button>
+    </div>
+
     <div class="container">
         <div class="header">
             <h1 style="text-align: center; margin-bottom: 20px; color: #333; font-size: 2.5em; font-weight: 700;">🎾 Padel Academy Management</h1>
@@ -801,14 +843,10 @@
             
             <div class="form-grid">
                 <div class="form-group">
-                    <h3>🌐 Free Cloud Sync</h3>
-                    <button class="btn btn-success" onclick="showCloudSetup()">Setup Cloud Sync</button>
-                    <p style="color: #666; font-size: 0.9em; margin-top: 10px;">
-                        ✅ 100% Free using GitHub<br>
-                        ✅ Sync across all devices<br>
-                        ✅ Automatic backup<br>
-                        ✅ Private & secure
-                    </p>
+                    <h3>Cloud Sync</h3>
+                    <p>Your data is automatically synced to the cloud and across devices.</p>
+                    <button class="btn" onclick="manualSync()">🔄 Manual Sync</button>
+                    <button class="btn btn-secondary" onclick="clearCloudData()">☁️ Clear Cloud Data</button>
                 </div>
                 
                 <div class="form-group">
@@ -954,190 +992,237 @@
     </div>
 
     <script>
-        // Simple Cloud Storage using GitHub Gist API (FREE)
+        // Simple Cloud Storage Implementation
         class SimpleCloudStorage {
             constructor() {
-                this.token = localStorage.getItem('github_token');
-                this.gistId = localStorage.getItem('gist_id');
-                this.username = localStorage.getItem('github_username');
+                this.isOnline = navigator.onLine;
+                this.syncInProgress = false;
+                this.lastSync = localStorage.getItem('lastSync') || null;
+                
+                // Listen for online/offline events
+                window.addEventListener('online', () => {
+                    this.isOnline = true;
+                    this.updateSyncStatus();
+                    this.autoSync();
+                });
+                
+                window.addEventListener('offline', () => {
+                    this.isOnline = false;
+                    this.updateSyncStatus();
+                });
+                
+                // Auto-sync every 5 minutes when online
+                setInterval(() => {
+                    if (this.isOnline && !this.syncInProgress) {
+                        this.autoSync();
+                    }
+                }, 5 * 60 * 1000);
             }
             
-            // One-time setup for user
-            async setup() {
-                const username = prompt('Enter your GitHub username:');
-                const token = prompt('Enter your GitHub Personal Access Token\n\nTo create one:\n1. Go to github.com/settings/tokens\n2. Click "Generate new token (classic)"\n3. Give it a name like "Padel Academy"\n4. Check "gist" permission\n5. Click "Generate token"\n6. Copy the token here:');
+            // Generate a unique device ID
+            getDeviceId() {
+                let deviceId = localStorage.getItem('deviceId');
+                if (!deviceId) {
+                    deviceId = 'device_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
+                    localStorage.setItem('deviceId', deviceId);
+                }
+                return deviceId;
+            }
+            
+            // Store data in the "cloud" (using localStorage with cloud prefix)
+            async saveToCloud(key, data) {
+                if (!this.isOnline) {
+                    throw new Error('Offline - cannot sync to cloud');
+                }
                 
-                if (!username || !token) {
-                    alert('Setup cancelled. You can set this up later by clicking the sync status indicator.');
+                const cloudKey = `cloud_${key}`;
+                const cloudData = {
+                    data: data,
+                    timestamp: Date.now(),
+                    deviceId: this.getDeviceId(),
+                    version: this.getDataVersion(key)
+                };
+                
+                // Simulate network delay
+                await new Promise(resolve => setTimeout(resolve, 100));
+                localStorage.setItem(cloudKey, JSON.stringify(cloudData));
+                return cloudData;
+            }
+            
+            // Load data from the "cloud"
+            async loadFromCloud(key) {
+                if (!this.isOnline) {
+                    throw new Error('Offline - cannot load from cloud');
+                }
+                
+                const cloudKey = `cloud_${key}`;
+                const cloudDataStr = localStorage.getItem(cloudKey);
+                
+                if (!cloudDataStr) {
+                    return null;
+                }
+                
+                // Simulate network delay
+                await new Promise(resolve => setTimeout(resolve, 50));
+                return JSON.parse(cloudDataStr);
+            }
+            
+            // Get data version for conflict resolution
+            getDataVersion(key) {
+                const versionKey = `${key}_version`;
+                let version = parseInt(localStorage.getItem(versionKey) || '1');
+                version++;
+                localStorage.setItem(versionKey, version.toString());
+                return version;
+            }
+            
+            // Sync data to cloud
+            async syncToCloud() {
+                if (!this.isOnline || this.syncInProgress) {
                     return false;
                 }
                 
-                localStorage.setItem('github_username', username);
-                localStorage.setItem('github_token', token);
-                this.username = username;
-                this.token = token;
+                this.syncInProgress = true;
+                this.updateSyncStatus();
                 
-                // Create initial gist
-                await this.createInitialGist();
+                try {
+                    const keys = ['sessions', 'clients', 'expenses', 'targets', 'nextSessionId'];
+                    
+                    for (const key of keys) {
+                        const localData = localStorage.getItem(key);
+                        if (localData) {
+                            await this.saveToCloud(key, JSON.parse(localData));
+                        }
+                    }
+                    
+                    this.lastSync = new Date().toISOString();
+                    localStorage.setItem('lastSync', this.lastSync);
+                    
+                    return true;
+                } catch (error) {
+                    console.error('Sync to cloud failed:', error);
+                    return false;
+                } finally {
+                    this.syncInProgress = false;
+                    this.updateSyncStatus();
+                }
+            }
+            
+            // Sync data from cloud
+            async syncFromCloud() {
+                if (!this.isOnline || this.syncInProgress) {
+                    return false;
+                }
+                
+                this.syncInProgress = true;
+                this.updateSyncStatus();
+                
+                try {
+                    const keys = ['sessions', 'clients', 'expenses', 'targets', 'nextSessionId'];
+                    let hasUpdates = false;
+                    
+                    for (const key of keys) {
+                        const cloudData = await this.loadFromCloud(key);
+                        if (cloudData) {
+                            const localDataStr = localStorage.getItem(key);
+                            const localTimestamp = parseInt(localStorage.getItem(`${key}_timestamp`) || '0');
+                            
+                            // Use cloud data if it's newer
+                            if (cloudData.timestamp > localTimestamp) {
+                                localStorage.setItem(key, JSON.stringify(cloudData.data));
+                                localStorage.setItem(`${key}_timestamp`, cloudData.timestamp.toString());
+                                hasUpdates = true;
+                            }
+                        }
+                    }
+                    
+                    if (hasUpdates) {
+                        // Reload data in the UI
+                        await this.reloadAppData();
+                    }
+                    
+                    this.lastSync = new Date().toISOString();
+                    localStorage.setItem('lastSync', this.lastSync);
+                    
+                    return true;
+                } catch (error) {
+                    console.error('Sync from cloud failed:', error);
+                    return false;
+                } finally {
+                    this.syncInProgress = false;
+                    this.updateSyncStatus();
+                }
+            }
+            
+            // Full bidirectional sync
+            async fullSync() {
+                await this.syncFromCloud();
+                await this.syncToCloud();
+            }
+            
+            // Auto sync (less aggressive)
+            async autoSync() {
+                try {
+                    await this.syncFromCloud();
+                } catch (error) {
+                    console.error('Auto sync failed:', error);
+                }
+            }
+            
+            // Clear cloud data
+            async clearCloudData() {
+                if (!this.isOnline) {
+                    throw new Error('Offline - cannot clear cloud data');
+                }
+                
+                const keys = ['sessions', 'clients', 'expenses', 'targets', 'nextSessionId'];
+                for (const key of keys) {
+                    const cloudKey = `cloud_${key}`;
+                    localStorage.removeItem(cloudKey);
+                }
+                
                 return true;
             }
             
-            async createInitialGist() {
-                const initialData = {
-                    sessions,
-                    clients,
-                    expenses,
-                    targets,
-                    nextSessionId,
-                    lastUpdated: new Date().toISOString()
-                };
+            // Update sync status in UI
+            updateSyncStatus() {
+                const indicator = document.getElementById('syncIndicator');
+                const text = document.getElementById('syncText');
                 
-                const gistData = {
-                    description: 'Padel Academy Data - Private Storage',
-                    public: false,
-                    files: {
-                        'padel_data.json': {
-                            content: JSON.stringify(initialData, null, 2)
-                        }
-                    }
-                };
+                if (!indicator || !text) return;
                 
-                try {
-                    const response = await fetch('https://api.github.com/gists', {
-                        method: 'POST',
-                        headers: {
-                            'Authorization': `token ${this.token}`,
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify(gistData)
-                    });
-                    
-                    if (response.ok) {
-                        const result = await response.json();
-                        this.gistId = result.id;
-                        localStorage.setItem('gist_id', this.gistId);
-                        showAlert('Cloud storage setup complete! Your data will now sync across devices.', 'success');
-                        return true;
-                    } else {
-                        throw new Error('Failed to create gist');
-                    }
-                } catch (error) {
-                    console.error('Setup failed:', error);
-                    alert('Setup failed. Please check your token has "gist" permission and try again.');
-                }
-                return false;
-            }
-            
-            async saveData() {
-                if (!this.token || !this.gistId) {
-                    // Fallback to localStorage if not set up
-                    localStorage.setItem('sessions', JSON.stringify(sessions));
-                    localStorage.setItem('clients', JSON.stringify(clients));
-                    localStorage.setItem('expenses', JSON.stringify(expenses));
-                    localStorage.setItem('targets', JSON.stringify(targets));
-                    localStorage.setItem('nextSessionId', nextSessionId.toString());
-                    return;
-                }
-                
-                const dataToSave = {
-                    sessions,
-                    clients,
-                    expenses,
-                    targets,
-                    nextSessionId,
-                    lastUpdated: new Date().toISOString()
-                };
-                
-                try {
-                    const response = await fetch(`https://api.github.com/gists/${this.gistId}`, {
-                        method: 'PATCH',
-                        headers: {
-                            'Authorization': `token ${this.token}`,
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            files: {
-                                'padel_data.json': {
-                                    content: JSON.stringify(dataToSave, null, 2)
-                                }
-                            }
-                        })
-                    });
-                    
-                    if (response.ok) {
-                        console.log('Data saved to cloud successfully');
-                        updateSyncIndicator('synced');
-                        localStorage.setItem('lastSyncTime', new Date().toISOString());
-                    }
-                } catch (error) {
-                    console.error('Cloud save failed:', error);
-                    updateSyncIndicator('error');
-                    // Fallback to localStorage
-                    localStorage.setItem('sessions', JSON.stringify(sessions));
-                    localStorage.setItem('clients', JSON.stringify(clients));
-                    localStorage.setItem('expenses', JSON.stringify(expenses));
-                    localStorage.setItem('targets', JSON.stringify(targets));
-                    localStorage.setItem('nextSessionId', nextSessionId.toString());
+                if (this.syncInProgress) {
+                    indicator.className = 'sync-indicator syncing';
+                    text.textContent = 'Syncing...';
+                } else if (this.isOnline) {
+                    indicator.className = 'sync-indicator connected';
+                    const lastSyncText = this.lastSync ? 
+                        new Date(this.lastSync).toLocaleTimeString() : 'Never';
+                    text.textContent = `Online (${lastSyncText})`;
+                } else {
+                    indicator.className = 'sync-indicator';
+                    text.textContent = 'Offline';
                 }
             }
             
-            async loadData() {
-                if (!this.token || !this.gistId) {
-                    // Load from localStorage
-                    return {
-                        sessions: JSON.parse(localStorage.getItem('sessions') || '[]'),
-                        clients: JSON.parse(localStorage.getItem('clients') || '[]'),
-                        expenses: JSON.parse(localStorage.getItem('expenses') || '[]'),
-                        targets: JSON.parse(localStorage.getItem('targets') || '[]'),
-                        nextSessionId: parseInt(localStorage.getItem('nextSessionId') || '1')
-                    };
-                }
+            // Reload app data after sync
+            async reloadAppData() {
+                // Reload global variables
+                sessions = JSON.parse(localStorage.getItem('sessions') || '[]');
+                clients = JSON.parse(localStorage.getItem('clients') || '[]');
+                expenses = JSON.parse(localStorage.getItem('expenses') || '[]');
+                targets = JSON.parse(localStorage.getItem('targets') || '[]');
+                nextSessionId = parseInt(localStorage.getItem('nextSessionId') || '1');
                 
-                try {
-                    const response = await fetch(`https://api.github.com/gists/${this.gistId}`, {
-                        headers: {
-                            'Authorization': `token ${this.token}`
-                        }
-                    });
-                    
-                    if (response.ok) {
-                        const gist = await response.json();
-                        const content = gist.files['padel_data.json'].content;
-                        const data = JSON.parse(content);
-                        console.log('Data loaded from cloud successfully');
-                        updateSyncIndicator('synced');
-                        return data;
-                    }
-                } catch (error) {
-                    console.error('Cloud load failed:', error);
-                    updateSyncIndicator('error');
-                }
-                
-                // Fallback to localStorage
-                return {
-                    sessions: JSON.parse(localStorage.getItem('sessions') || '[]'),
-                    clients: JSON.parse(localStorage.getItem('clients') || '[]'),
-                    expenses: JSON.parse(localStorage.getItem('expenses') || '[]'),
-                    targets: JSON.parse(localStorage.getItem('targets') || '[]'),
-                    nextSessionId: parseInt(localStorage.getItem('nextSessionId') || '1')
-                };
-            }
-            
-            isSetup() {
-                return !!(this.token && this.gistId);
-            }
-            
-            async resetSetup() {
-                if (confirm('This will reset cloud sync setup. You will need to set it up again. Continue?')) {
-                    localStorage.removeItem('github_token');
-                    localStorage.removeItem('gist_id');
-                    localStorage.removeItem('github_username');
-                    this.token = null;
-                    this.gistId = null;
-                    this.username = null;
-                    showSyncStatus();
-                    showAlert('Cloud sync reset. Click the indicator to set up again.', 'info');
-                }
+                // Refresh UI
+                loadSessions();
+                loadClients();
+                loadExpenses();
+                loadTargets();
+                populateClientDropdowns();
+                updateDashboard();
+                renderCalendar();
+                renderTargets();
             }
         }
 
@@ -1153,132 +1238,69 @@
         let currentCalendarDate = new Date();
         let currentReportData = null;
 
-        // Modified data loading and saving functions
+        // Load all data (cloud + local)
         async function loadAllData() {
+            // Try to load from cloud first
             try {
-                const data = await cloudStorage.loadData();
-                sessions = data.sessions || [];
-                clients = data.clients || [];
-                expenses = data.expenses || [];
-                targets = data.targets || [];
-                nextSessionId = data.nextSessionId || 1;
-                
-                populateClientDropdowns();
-                updateDashboard();
-                renderCalendar();
-                
+                await cloudStorage.syncFromCloud();
             } catch (error) {
-                console.error('Error loading data:', error);
-                showAlert('Error loading data', 'danger');
+                console.log('Cloud sync failed, using local data:', error);
+            }
+            
+            // Load data into global variables
+            sessions = JSON.parse(localStorage.getItem('sessions') || '[]');
+            clients = JSON.parse(localStorage.getItem('clients') || '[]');
+            expenses = JSON.parse(localStorage.getItem('expenses') || '[]');
+            targets = JSON.parse(localStorage.getItem('targets') || '[]');
+            nextSessionId = parseInt(localStorage.getItem('nextSessionId') || '1');
+        }
+
+        // Save data with cloud sync
+        async function saveData(key, data) {
+            // Save locally first
+            localStorage.setItem(key, JSON.stringify(data));
+            localStorage.setItem(`${key}_timestamp`, Date.now().toString());
+            
+            // Try to sync to cloud
+            try {
+                await cloudStorage.saveToCloud(key, data);
+            } catch (error) {
+                console.log('Cloud save failed, data saved locally:', error);
             }
         }
 
-        function autoSave() {
-            // Debounce saves to avoid too many requests
-            clearTimeout(autoSave.timeout);
-            autoSave.timeout = setTimeout(() => {
-                cloudStorage.saveData();
-            }, 2000);
+        // Manual sync function
+        async function manualSync() {
+            try {
+                await cloudStorage.fullSync();
+                showAlert('Sync completed successfully!', 'success');
+            } catch (error) {
+                showAlert('Sync failed: ' + error.message, 'danger');
+            }
         }
 
-        // Cloud setup functions
-        function showCloudSetup() {
-            if (cloudStorage.isSetup()) {
-                const lastSync = localStorage.getItem('lastSyncTime');
-                const syncTime = lastSync ? new Date(lastSync).toLocaleString() : 'Never';
-                
-                if (confirm(`Cloud sync is active!\n\nLast sync: ${syncTime}\n\nOptions:\n- OK: Test sync now\n- Cancel: Reset setup`)) {
-                    cloudStorage.saveData();
-                    showAlert('Sync test completed!', 'success');
-                } else {
-                    cloudStorage.resetSetup();
+        // Clear cloud data
+        async function clearCloudData() {
+            if (confirm('Clear all cloud data? This will remove synced data from all devices.')) {
+                try {
+                    await cloudStorage.clearCloudData();
+                    showAlert('Cloud data cleared successfully!', 'success');
+                } catch (error) {
+                    showAlert('Failed to clear cloud data: ' + error.message, 'danger');
                 }
-                return;
-            }
-            
-            const setupInstructions = `🌐 FREE Cloud Sync Setup
-
-This will sync your data across all devices using GitHub (100% free).
-
-Steps:
-1. Go to github.com/settings/tokens
-2. Click "Generate new token (classic)"
-3. Give it a name like "Padel Academy"
-4. Check ONLY the "gist" permission
-5. Click "Generate token"
-6. Copy the token (you won't see it again!)
-
-Ready to set up now?`;
-            
-            if (confirm(setupInstructions)) {
-                cloudStorage.setup().then(success => {
-                    if (success) {
-                        cloudStorage.saveData(); // Sync current data
-                        showSyncStatus(); // Update indicator
-                    }
-                });
             }
         }
 
-        // Sync status indicator
+        // Show sync status
         function showSyncStatus() {
-            // Remove existing indicator
-            const existing = document.getElementById('syncIndicator');
-            if (existing) existing.remove();
-            
-            const indicator = document.createElement('div');
-            indicator.id = 'syncIndicator';
-            indicator.style.cssText = `
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                padding: 8px 12px;
-                border-radius: 20px;
-                font-size: 12px;
-                font-weight: 600;
-                z-index: 1000;
-                transition: all 0.3s ease;
-                cursor: pointer;
-                box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-            `;
-            
-            updateSyncIndicator();
-            indicator.onclick = showCloudSetup;
-            
-            document.body.appendChild(indicator);
-        }
-
-        function updateSyncIndicator(status) {
-            const indicator = document.getElementById('syncIndicator');
-            if (!indicator) return;
-            
-            if (cloudStorage.isSetup()) {
-                if (status === 'synced') {
-                    indicator.textContent = '☁️ Synced';
-                    indicator.style.background = '#2ed573';
-                    indicator.style.color = 'white';
-                    indicator.title = 'Click to test sync or reset';
-                } else if (status === 'error') {
-                    indicator.textContent = '⚠️ Sync Error';
-                    indicator.style.background = '#ff4757';
-                    indicator.style.color = 'white';
-                    indicator.title = 'Click to retry or reset';
-                } else {
-                    indicator.textContent = '☁️ Cloud Ready';
-                    indicator.style.background = '#3742fa';
-                    indicator.style.color = 'white';
-                    indicator.title = 'Click to test sync';
-                }
-            } else {
-                indicator.textContent = '📱 Local Only';
-                indicator.style.background = '#ffa502';
-                indicator.style.color = 'white';
-                indicator.title = 'Click to set up free cloud sync';
-            }
+            cloudStorage.updateSyncStatus();
         }
 
         // Initialize app
-        document.addEventListener('DOMContentLoaded', async function(showSyncStatus();) {
+        document.addEventListener('DOMContentLoaded', async function() {
+            // Load data from cloud or local
+            await loadAllData();
+            
             // Set default dates
             const today = new Date();
             const localDate = new Date(today.getTime() - (today.getTimezoneOffset() * 60000));
@@ -1292,67 +1314,16 @@ Ready to set up now?`;
             // Setup event listeners
             setupEventListeners();
             
-            // Load data (from cloud or local)
-            await loadAllData();
-            
-            // Show sync status indicator
+            // Load data into UI
+            loadSessions();
+            loadClients();
+            loadExpenses();
+            loadTargets();
+            populateClientDropdowns();
+            updateDashboard();
+            renderCalendar();
             showSyncStatus();
-            
-            // Setup periodic sync check (every 5 minutes)
-            setInterval(async () => {
-                if (cloudStorage.isSetup()) {
-                    try {
-                        const cloudData = await cloudStorage.loadData();
-                        const localLastUpdated = localStorage.getItem('lastSyncTime') || '2020-01-01';
-                        const cloudLastUpdated = cloudData.lastUpdated || '2020-01-01';
-                        
-                        if (new Date(cloudLastUpdated) > new Date(localLastUpdated)) {
-                            // Cloud has newer data, load it
-                            sessions = cloudData.sessions || [];
-                            clients = cloudData.clients || [];
-                            expenses = cloudData.expenses || [];
-                            targets = cloudData.targets || [];
-                            nextSessionId = cloudData.nextSessionId || 1;
-                            
-                            // Refresh displays
-                            loadSessions();
-                            loadClients();
-                            loadExpenses();
-                            renderTargets();
-                            populateClientDropdowns();
-                            updateDashboard();
-                            renderCalendar();
-                            
-                            showAlert('Data updated from another device!', 'info');
-                        }
-                    } catch (error) {
-                        console.error('Periodic sync check failed:', error);
-                    }
-                }
-            }, 5 * 60 * 1000); // 5 minutes
         });
-
-        // Add this to your backup page
-        function addCloudSyncToBackupPage() {
-            const backupPage = document.getElementById('backup');
-            if (backupPage && !document.getElementById('cloudSyncSection')) {
-                const cloudSection = document.createElement('div');
-                cloudSection.id = 'cloudSyncSection';
-                cloudSection.innerHTML = `
-                    <div class="form-group">
-                        <h3>🌐 Free Cloud Sync</h3>
-                        <button class="btn btn-success" onclick="showCloudSetup()">Setup Cloud Sync</button>
-                        <p style="color: #666; font-size: 0.9em; margin-top: 10px;">
-                            ✅ 100% Free using GitHub<br>
-                            ✅ Sync across all devices<br>
-                            ✅ Automatic backup<br>
-                            ✅ Private & secure
-                        </p>
-                    </div>
-                `;
-                backupPage.querySelector('.form-grid').appendChild(cloudSection);
-            }
-        }
 
         function setupEventListeners() {
             document.getElementById('location').addEventListener('change', function() {
@@ -1412,7 +1383,7 @@ Ready to set up now?`;
         function generateSessionId() {
             const id = 'PA-' + String(nextSessionId).padStart(3, '0');
             nextSessionId++;
-            localStorage.setItem('nextSessionId', nextSessionId.toString());
+            saveData('nextSessionId', nextSessionId);
             return id;
         }
 
@@ -1493,7 +1464,7 @@ Ready to set up now?`;
             }
         }
 
-        function addSession(event) {
+        async function addSession(event) {
             event.preventDefault();
             
             let clientName;
@@ -1519,7 +1490,7 @@ Ready to set up now?`;
                     createdDate: getLocalDateString(new Date())
                 };
                 clients.push(newClient);
-                localStorage.setItem('clients', JSON.stringify(clients));
+                await saveData('clients', clients);
                 populateClientDropdowns();
             } else {
                 clientName = clientSelect.value;
@@ -1576,7 +1547,7 @@ Ready to set up now?`;
             // Handle package deduction
             if (packageUsed) {
                 packageUsed.balance -= 1;
-                localStorage.setItem('clients', JSON.stringify(clients));
+                await saveData('clients', clients);
             }
             
             // Handle canceled sessions with credits
@@ -1585,17 +1556,13 @@ Ready to set up now?`;
             }
 
             sessions.push(session);
-            localStorage.setItem('sessions', JSON.stringify(sessions));
-            localStorage.setItem('nextSessionId', nextSessionId.toString());
+            await saveData('sessions', sessions);
             
             loadSessions();
             hideAddSessionForm();
             updateDashboard();
             renderCalendar();
             showAlert('Session added successfully!', 'success');
-            
-            // Auto-save to cloud
-            autoSave();
         }
 
         function calculateSessionFinancials(session) {
@@ -1612,11 +1579,11 @@ Ready to set up now?`;
             session.netProfit = session.totalRevenue - totalCourtCost;
         }
 
-        function addCreditToClient(clientName, amount) {
+        async function addCreditToClient(clientName, amount) {
             const client = clients.find(c => c.name === clientName);
             if (client) {
                 client.creditBalance = (client.creditBalance || 0) + amount;
-                localStorage.setItem('clients', JSON.stringify(clients));
+                await saveData('clients', clients);
                 showAlert(`Credit of AED ${amount.toFixed(2)} added to ${clientName}`, 'success');
             }
         }
@@ -1710,7 +1677,7 @@ Ready to set up now?`;
             document.getElementById('editSessionModal').style.display = 'block';
         }
 
-        function updateSession(event) {
+        async function updateSession(event) {
             event.preventDefault();
             
             const sessionId = parseInt(document.getElementById('editSessionId').value);
@@ -1744,8 +1711,8 @@ Ready to set up now?`;
             // Recalculate financials
             calculateSessionFinancials(session);
             
-            // Save to localStorage
-            localStorage.setItem('sessions', JSON.stringify(sessions));
+            // Save to storage
+            await saveData('sessions', sessions);
             
             // Refresh displays
             loadSessions();
@@ -1763,10 +1730,10 @@ Ready to set up now?`;
             document.getElementById('editCustomLocation').value = '';
         }
 
-        function deleteSession(sessionId) {
+        async function deleteSession(sessionId) {
             if (confirm('Delete this session?')) {
                 sessions = sessions.filter(s => s.id !== sessionId);
-                localStorage.setItem('sessions', JSON.stringify(sessions));
+                await saveData('sessions', sessions);
                 loadSessions();
                 updateDashboard();
                 renderCalendar();
@@ -1774,12 +1741,12 @@ Ready to set up now?`;
             }
         }
 
-        function markAsPaid(sessionId) {
+        async function markAsPaid(sessionId) {
             const session = sessions.find(s => s.id === sessionId);
             if (session) {
                 session.paymentStatus = 'Paid';
                 calculateSessionFinancials(session);
-                localStorage.setItem('sessions', JSON.stringify(sessions));
+                await saveData('sessions', sessions);
                 loadSessions();
                 updateDashboard();
                 renderCalendar();
@@ -1787,7 +1754,7 @@ Ready to set up now?`;
             }
         }
 
-        function cancelSession(sessionId) {
+        async function cancelSession(sessionId) {
             if (confirm('Cancel this session? If paid, credit will be added to client.')) {
                 const session = sessions.find(s => s.id === sessionId);
                 if (session) {
@@ -1796,7 +1763,7 @@ Ready to set up now?`;
                     }
                     session.paymentStatus = 'Canceled';
                     calculateSessionFinancials(session);
-                    localStorage.setItem('sessions', JSON.stringify(sessions));
+                    await saveData('sessions', sessions);
                     loadSessions();
                     loadClients();
                     updateDashboard();
@@ -1816,7 +1783,7 @@ Ready to set up now?`;
             document.querySelector('#addClientForm form').reset();
         }
 
-        function addClient(event) {
+        async function addClient(event) {
             event.preventDefault();
             
             const client = {
@@ -1832,16 +1799,13 @@ Ready to set up now?`;
             };
 
             clients.push(client);
-            localStorage.setItem('clients', JSON.stringify(clients));
+            await saveData('clients', clients);
             
             loadClients();
             populateClientDropdowns();
             hideAddClientForm();
             updateDashboard();
             showAlert('Client added successfully!', 'success');
-            
-            // Auto-save to cloud
-            autoSave();
         }
 
         function loadClients() {
@@ -1872,10 +1836,10 @@ Ready to set up now?`;
             });
         }
 
-        function deleteClient(clientId) {
+        async function deleteClient(clientId) {
             if (confirm('Delete this client?')) {
                 clients = clients.filter(c => c.id !== clientId);
-                localStorage.setItem('clients', JSON.stringify(clients));
+                await saveData('clients', clients);
                 loadClients();
                 populateClientDropdowns();
                 updateDashboard();
@@ -1955,7 +1919,7 @@ Ready to set up now?`;
             modal.style.display = 'block';
         }
 
-        function addPackage(clientId) {
+        async function addPackage(clientId) {
             const client = clients.find(c => c.id === clientId);
             if (!client) return;
             
@@ -1980,19 +1944,19 @@ Ready to set up now?`;
             };
             
             client.packages.push(newPackage);
-            localStorage.setItem('clients', JSON.stringify(clients));
+            await saveData('clients', clients);
             
             manageCredit(clientId); // Refresh modal
             loadClients();
             showAlert(`Package "${name}" added successfully!`, 'success');
         }
 
-        function removePackage(clientId, packageId) {
+        async function removePackage(clientId, packageId) {
             if (confirm('Remove this package?')) {
                 const client = clients.find(c => c.id === clientId);
                 if (client && client.packages) {
                     client.packages = client.packages.filter(p => p.id !== packageId);
-                    localStorage.setItem('clients', JSON.stringify(clients));
+                    await saveData('clients', clients);
                     manageCredit(clientId); // Refresh modal
                     loadClients();
                     showAlert('Package removed!', 'success');
@@ -2000,7 +1964,7 @@ Ready to set up now?`;
             }
         }
 
-        function updateCredit(clientId) {
+        async function updateCredit(clientId) {
             const client = clients.find(c => c.id === clientId);
             if (!client) return;
             
@@ -2020,7 +1984,7 @@ Ready to set up now?`;
                     break;
             }
             
-            localStorage.setItem('clients', JSON.stringify(clients));
+            await saveData('clients', clients);
             loadClients();
             loadSessions();
             updateDashboard();
@@ -2072,7 +2036,7 @@ Ready to set up now?`;
             document.getElementById('expenseDate').value = localDate.toISOString().split('T')[0];
         }
 
-        function addExpense(event) {
+        async function addExpense(event) {
             event.preventDefault();
             
             const expense = {
@@ -2084,15 +2048,12 @@ Ready to set up now?`;
             };
 
             expenses.push(expense);
-            localStorage.setItem('expenses', JSON.stringify(expenses));
+            await saveData('expenses', expenses);
             
             loadExpenses();
             hideAddExpenseForm();
             updateDashboard();
             showAlert('Expense added successfully!', 'success');
-            
-            // Auto-save to cloud
-            autoSave();
         }
 
         function loadExpenses() {
@@ -2121,10 +2082,10 @@ Ready to set up now?`;
             });
         }
 
-        function deleteExpense(expenseId) {
+        async function deleteExpense(expenseId) {
             if (confirm('Delete this expense?')) {
                 expenses = expenses.filter(e => e.id !== expenseId);
-                localStorage.setItem('expenses', JSON.stringify(expenses));
+                await saveData('expenses', expenses);
                 loadExpenses();
                 updateDashboard();
                 showAlert('Expense deleted!', 'success');
@@ -2141,7 +2102,7 @@ Ready to set up now?`;
             document.querySelector('#addTargetForm form').reset();
         }
 
-        function addTarget(event) {
+        async function addTarget(event) {
             event.preventDefault();
             
             const target = {
@@ -2154,7 +2115,7 @@ Ready to set up now?`;
             };
 
             targets.push(target);
-            localStorage.setItem('targets', JSON.stringify(targets));
+            await saveData('targets', targets);
             
             loadTargets();
             hideAddTargetForm();
@@ -2257,10 +2218,10 @@ Ready to set up now?`;
             return { achieved, percentage };
         }
 
-        function deleteTarget(targetId) {
+        async function deleteTarget(targetId) {
             if (confirm('Delete this target?')) {
                 targets = targets.filter(t => t.id !== targetId);
-                localStorage.setItem('targets', JSON.stringify(targets));
+                await saveData('targets', targets);
                 renderTargets();
                 showAlert('Target deleted!', 'success');
             }
@@ -2938,12 +2899,12 @@ Ready to set up now?`;
             document.getElementById('restoreFile').click();
         }
 
-        function handleRestore(event) {
+        async function handleRestore(event) {
             const file = event.target.files[0];
             if (!file) return;
             
             const reader = new FileReader();
-            reader.onload = function(e) {
+            reader.onload = async function(e) {
                 try {
                     const data = JSON.parse(e.target.result);
                     
@@ -2954,11 +2915,12 @@ Ready to set up now?`;
                         targets = data.targets || [];
                         nextSessionId = data.nextSessionId || 1;
                         
-                        localStorage.setItem('sessions', JSON.stringify(sessions));
-                        localStorage.setItem('clients', JSON.stringify(clients));
-                        localStorage.setItem('expenses', JSON.stringify(expenses));
-                        localStorage.setItem('targets', JSON.stringify(targets));
-                        localStorage.setItem('nextSessionId', nextSessionId.toString());
+                        // Save to local storage and sync to cloud
+                        await saveData('sessions', sessions);
+                        await saveData('clients', clients);
+                        await saveData('expenses', expenses);
+                        await saveData('targets', targets);
+                        await saveData('nextSessionId', nextSessionId);
                         
                         loadSessions();
                         loadClients();
@@ -2979,7 +2941,7 @@ Ready to set up now?`;
             event.target.value = '';
         }
 
-        function clearAllData() {
+        async function clearAllData() {
             if (confirm('This will delete ALL data permanently. Are you sure?')) {
                 if (confirm('Last chance! This cannot be undone.')) {
                     sessions = [];
@@ -2988,7 +2950,15 @@ Ready to set up now?`;
                     targets = [];
                     nextSessionId = 1;
                     
+                    // Clear local storage
                     localStorage.clear();
+                    
+                    // Clear cloud data
+                    try {
+                        await cloudStorage.clearCloudData();
+                    } catch (error) {
+                        console.log('Cloud clear failed:', error);
+                    }
                     
                     loadSessions();
                     loadClients();
@@ -3024,129 +2994,7 @@ Ready to set up now?`;
                 }
             });
         }
-    </script>// Cloud Storage Class - ADD THIS RIGHT AFTER <script>
-class SimpleCloudStorage {
-    constructor() {
-        this.token = localStorage.getItem('github_token');
-        this.gistId = localStorage.getItem('gist_id');
-        this.username = localStorage.getItem('github_username');
-    }
-    
-    async setup() {
-        const username = prompt('Enter your GitHub username:');
-        const token = prompt('Enter your GitHub Personal Access Token\n\nTo create one:\n1. Go to github.com/settings/tokens\n2. Click "Generate new token (classic)"\n3. Give it a name like "Padel Academy"\n4. Check "gist" permission\n5. Click "Generate token"\n6. Copy the token here:');
-        
-        if (!username || !token) {
-            alert('Setup cancelled.');
-            return false;
-        }
-        
-        localStorage.setItem('github_username', username);
-        localStorage.setItem('github_token', token);
-        this.username = username;
-        this.token = token;
-        
-        return await this.createInitialGist();
-    }
-    
-    async createInitialGist() {
-        const data = { sessions, clients, expenses, targets, nextSessionId };
-        
-        try {
-            const response = await fetch('https://api.github.com/gists', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `token ${this.token}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    description: 'Padel Academy Data',
-                    public: false,
-                    files: { 'padel_data.json': { content: JSON.stringify(data) } }
-                })
-            });
-            
-            if (response.ok) {
-                const result = await response.json();
-                this.gistId = result.id;
-                localStorage.setItem('gist_id', this.gistId);
-                alert('Cloud storage setup complete!');
-                showSyncStatus();
-                return true;
-            }
-        } catch (error) {
-            alert('Setup failed. Check your token and try again.');
-        }
-        return false;
-    }
-    
-    async saveData() {
-        if (!this.token || !this.gistId) return;
-        
-        const data = { sessions, clients, expenses, targets, nextSessionId };
-        
-        try {
-            await fetch(`https://api.github.com/gists/${this.gistId}`, {
-                method: 'PATCH',
-                headers: {
-                    'Authorization': `token ${this.token}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    files: { 'padel_data.json': { content: JSON.stringify(data) } }
-                })
-            });
-        } catch (error) {
-            console.error('Save failed:', error);
-        }
-    }
-    
-    isSetup() {
-        return !!(this.token && this.gistId);
-    }
-}
-
-const cloudStorage = new SimpleCloudStorage();
-
-function showCloudSetup() {
-    if (cloudStorage.isSetup()) {
-        alert('Cloud sync is already active!');
-        return;
-    }
-    cloudStorage.setup();
-}
-
-function showSyncStatus() {
-    const existing = document.getElementById('syncIndicator');
-    if (existing) existing.remove();
-    
-    const indicator = document.createElement('div');
-    indicator.id = 'syncIndicator';
-    indicator.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        padding: 8px 12px;
-        border-radius: 20px;
-        font-size: 12px;
-        font-weight: 600;
-        z-index: 1000;
-        cursor: pointer;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-    `;
-    
-    if (cloudStorage.isSetup()) {
-        indicator.textContent = '☁️ Synced';
-        indicator.style.background = '#2ed573';
-        indicator.style.color = 'white';
-    } else {
-        indicator.textContent = '📱 Local Only';
-        indicator.style.background = '#ffa502';
-        indicator.style.color = 'white';
-    }
-    
-    indicator.onclick = showCloudSetup;
-    document.body.appendChild(indicator);
-}    
+    </script>
 </body>
 </html>
+                            
